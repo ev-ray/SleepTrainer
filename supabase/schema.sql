@@ -122,6 +122,9 @@ create policy "family reads members"  on public.members  for select to authentic
 create policy "family reads profiles" on public.profiles for select to authenticated using (public.is_member());
 create policy "family reads settings" on public.settings for select to authenticated using (public.is_member());
 create policy "family edits settings" on public.settings for update to authenticated using (public.is_member()) with check (public.is_member());
+-- The app saves with upsert, which checks INSERT policies even when the row exists.
+-- The id = 1 check keeps it to one row.
+create policy "family upserts settings" on public.settings for insert to authenticated with check (public.is_member());
 
 create policy "family only" on public.sessions    for all to authenticated using (public.is_member()) with check (public.is_member());
 create policy "family only" on public.night_wakes for all to authenticated using (public.is_member()) with check (public.is_member());
@@ -129,7 +132,7 @@ create policy "family only" on public.checks      for all to authenticated using
 
 revoke all on public.members, public.profiles, public.settings, public.sessions, public.night_wakes, public.checks from anon;
 grant select on public.members, public.profiles to authenticated;
-grant select, update on public.settings to authenticated;
+grant select, insert, update on public.settings to authenticated;
 grant select, insert, update, delete on public.sessions, public.night_wakes, public.checks to authenticated;
 
 -- Trigger functions only run from triggers; nobody needs to call them directly.
