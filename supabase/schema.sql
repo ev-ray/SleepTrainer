@@ -132,6 +132,12 @@ grant select on public.members, public.profiles to authenticated;
 grant select, update on public.settings to authenticated;
 grant select, insert, update, delete on public.sessions, public.night_wakes, public.checks to authenticated;
 
+-- Trigger functions only run from triggers; nobody needs to call them directly.
+revoke execute on function public.gate_signup(), public.create_profile() from public, anon, authenticated;
+-- is_member() is used by RLS policies, so signed-in users keep it; anonymous callers don't.
+revoke execute on function public.is_member() from public, anon;
+grant execute on function public.is_member() to authenticated;
+
 -- ─── Live sync ───────────────────────────────────────────────────────────────
 alter publication supabase_realtime
   add table public.sessions, public.night_wakes, public.checks, public.settings, public.profiles;
