@@ -44,7 +44,7 @@ export const PLAN = [
   },
   {
     title: 'Down awake, then leave',
-    body: 'Drowsy is fine; asleep is not. Say the same phrase (“I love you, time to sleep”), walk out, close the door. The goal is for him to practise the last step — falling asleep — himself.',
+    body: 'Drowsy is fine; asleep is not. Say the same phrase (“I love you, time to sleep”), walk out, close the door. The goal is for him to practice the last step — falling asleep — himself.',
   },
   {
     title: 'Don’t go back in until it’s time',
@@ -115,7 +115,7 @@ export const PLAYBOOK = [
     title: 'Awake before morning time',
     steps: [
       'Treat it exactly like a night wake until your morning time.',
-      'If he’s still awake at morning time, get him up with lights on and a bright, cheerful start. Log “Up for the day”.',
+      'If he’s still awake at morning time, get him up with lights on and a bright, cheerful start. Log “Up for the day.”',
       'Early waking often means bedtime is too late or the last wake window is too long — try moving bedtime 15 minutes earlier for a few days.',
     ],
   },
@@ -135,15 +135,6 @@ export const PLAYBOOK = [
       'Comfort him. Being sick is a real reason to go in; call your pediatrician for fever or anything worrying.',
       'Keep the routine and put him down awake if you can.',
       'Once he’s well, go straight back to the plan. It usually takes a night or two to get back on track.',
-    ],
-  },
-  {
-    id: 'rolling',
-    title: 'He rolled onto his tummy',
-    steps: [
-      'Always put him down on his back. If he can roll both ways on his own, it’s safe to leave him in the position he chooses.',
-      'If he’s swaddled and showing any signs of rolling, stop swaddling now — switch to arms-out sleep sack.',
-      'Keep the crib empty: fitted sheet only, no bumpers, pillows or loose blankets.',
     ],
   },
   {
@@ -169,18 +160,9 @@ export const PLAYBOOK = [
 export const GO_IN_IF = [
   'His cry sounds different — high-pitched, panicked, or like he’s in pain.',
   'He feels hot, seems sick, or has vomited.',
-  'He’s swaddled and has rolled over, or something is caught (arm or leg in the slats).',
+  'Something is caught, like an arm or leg in the slats.',
   'It’s a planned feed.',
   'Your gut says something’s wrong. A quick, calm, lights-low check is always okay.',
-]
-
-export const SAFE_SLEEP = [
-  'On his back, every sleep.',
-  'Firm, flat crib mattress with a fitted sheet. Nothing else in the crib.',
-  'Stop swaddling at the first signs of rolling (AAP). Use an arms-out, non-weighted sleep sack.',
-  'Room-sharing (crib in your room) is recommended for at least the first 6 months.',
-  'Keep the room comfortably cool; dress him in no more than one layer more than you’d wear.',
-  'A pacifier at sleep time is fine and lowers SIDS risk — don’t go back in to replace it.',
 ]
 
 // ─── Research ────────────────────────────────────────────────────────────────
@@ -200,7 +182,7 @@ export const RESEARCH = [
     source: 'Gradisar et al., Pediatrics 2016',
     url: 'https://doi.org/10.1542/peds.2015-1486',
     finding:
-      'Randomised trial in 6–16-month-olds. Babies in the graduated-extinction group fell asleep faster and woke less. Their stress hormone (cortisol) was no higher than controls, and a year later there were no differences in attachment or behaviour.',
+      'Randomized trial in 6–16-month-olds. Babies in the graduated-extinction group fell asleep faster and woke less. Their stress hormone (cortisol) was no higher than controls, and a year later there were no differences in attachment or behavior.',
     takeaway: 'The crying is hard to hear, but the measured stress isn’t there.',
   },
   {
@@ -216,9 +198,9 @@ export const RESEARCH = [
     id: 'parents',
     title: 'Better for parents, too',
     source: 'Hiscock et al., BMJ 2002 & Arch Dis Child 2007',
-    url: 'https://pubmed.ncbi.nlm.nih.gov/?term=Hiscock+infant+sleep+maternal+depression+randomised',
+    url: 'https://pubmed.ncbi.nlm.nih.gov/?term=Hiscock+infant+sleep+maternal+depression+randomized',
     finding:
-      'In randomised trials, mothers whose babies received a behavioral sleep intervention reported fewer infant sleep problems and lower depression symptoms than controls.',
+      'In randomized trials, mothers whose babies received a behavioral sleep intervention reported fewer infant sleep problems and lower depression symptoms than controls.',
     takeaway: 'Rested parents are part of the goal, not a selfish extra.',
   },
   {
@@ -245,35 +227,24 @@ export const RESEARCH = [
     source: 'Middlemiss et al., Early Hum Dev 2012',
     url: 'https://doi.org/10.1016/j.earlhumdev.2011.08.010',
     finding:
-      'A small study (25 babies, no control group) reported infant cortisol stayed elevated after crying stopped. It’s often cited online, but without a comparison group it can’t say whether that level was unusual — and the randomised trial above (Gradisar 2016), which had one, found no cortisol difference.',
+      'A small study (25 babies, no control group) reported infant cortisol stayed elevated after crying stopped. It’s often cited online, but without a comparison group it can’t say whether that level was unusual — and the randomized trial above (Gradisar 2016), which had one, found no cortisol difference.',
     takeaway: 'It’s worth knowing about — and the stronger evidence is reassuring.',
   },
   {
     id: 'sleepneeds',
     title: 'How much sleep he needs',
-    source: 'Paruthi et al., J Clin Sleep Med 2016 (AASM); Hirshkowitz et al., Sleep Health 2015 (NSF)',
+    source: 'Paruthi et al., J Clin Sleep Med 2016 (AASM)',
     url: 'https://doi.org/10.5664/jcsm.5866',
     finding:
-      '4–12 months: 12–16 hours per 24 hours including naps (AASM). 0–3 months: 14–17 hours (NSF). At 3½ months he sits between the two.',
-    takeaway: 'The targets in this app come from these ranges.',
-  },
-  {
-    id: 'safe',
-    title: 'Safe sleep',
-    source: 'Moon et al., AAP Pediatrics 2022',
-    url: 'https://doi.org/10.1542/peds.2022-057990',
-    finding: 'The AAP’s current safe-sleep recommendations: back to sleep, flat and empty crib, room-share, stop swaddling once rolling starts.',
-    takeaway: 'Safe sleep and sleep training go together.',
+      'Babies 4–12 months need 12–16 hours of sleep per 24 hours, naps included.',
+    takeaway: 'The targets in this app come from this range.',
   },
 ]
-
-export const AGE_NOTE =
-  'Most sleep-training trials enrolled babies 6 months and older, and the AAP describes most babies as ready somewhere around 4–6 months. At 3½ months, keep planned night feeds in the plan and check the approach with your pediatrician — especially the feed schedule.'
 
 // ─── Hold steady ─────────────────────────────────────────────────────────────
 export const REMINDERS = [
   'He’s safe, he’s fed, and he’s learning. Crying is how he protests a change — not a sign of harm.',
-  'You’re not leaving him. You’re giving him the chance to practise something he can only learn by doing.',
+  'You’re not leaving him. You’re giving him the chance to practice something he can only learn by doing.',
   'Every consistent night makes the next one shorter.',
   'Going in now would teach him that crying longer works. Staying out is the kind choice tonight.',
   'You can hate this part and still be doing the right thing.',
@@ -284,7 +255,7 @@ export const COPING = [
   'Turn the monitor volume down (keep the video) and watch the timer instead of listening.',
   'Step outside, take a shower, or put on headphones for ten minutes.',
   'Tag out — whoever is less rattled takes the next stretch.',
-  'Set a check-in time for yourselves (not him): “we’ll look at the monitor at 20 minutes”.',
+  'Set a check-in time for yourselves (not him): “we’ll look at the monitor at 20 minutes.”',
   'Breathe with the circle for a minute.',
 ]
 

@@ -153,6 +153,15 @@ main { flex: 1; padding: 6px 16px calc(96px + var(--safe-bottom)); max-width: 56
 .hero .timer .sec { font-size: 32px; color: var(--ink-2); }
 .hero .timer .sec small { font-size: 18px; }
 .hero .sub { color: var(--ink-2); font-size: 14.5px; }
+.hero.tappable { cursor: pointer; }
+.edit-pill {
+  position: absolute; top: 16px; right: 16px; z-index: 1;
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 0; border-radius: 999px; padding: 7px 12px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent); color: var(--ink-2);
+  font-size: 13px; font-weight: 700;
+}
+.edit-pill svg { width: 15px; height: 15px; }
 .hero .moon-deco { position: absolute; right: -18px; top: -18px; width: 120px; height: 120px; opacity: 0.35; pointer-events: none; color: var(--accent); }
 
 .actions { display: grid; gap: 10px; margin-top: 18px; }

@@ -71,7 +71,10 @@ export function EditSessionSheet({ id, onClose }) {
         started_by: me(), asleep_by: me(), ended_by: me(), notes: null,
       },
   )
-  const [wakes, setWakes] = useState(() => (existing ? wakesOf(existing).map((w) => ({ ...w })) : []))
+  // What the rows looked like when the sheet opened, so Save only writes the
+  // fields you touched — the session may still be live on another phone.
+  const [original] = useState(() => ({ s: existing, wakes: existing ? wakesOf(existing) : [] }))
+  const [wakes, setWakes] = useState(() => original.wakes.map((w) => ({ ...w })))
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const set = (patch) => setS({ ...s, ...patch })
@@ -85,12 +88,21 @@ export function EditSessionSheet({ id, onClose }) {
     if (w.asleep_at && ms(w.asleep_at) < ms(w.woke_at)) problems.push(`Wake ${i + 1}: back asleep before it woke.`)
   })
 
+  const changes = (before, after) =>
+    Object.fromEntries(Object.entries(after).filter(([k, v]) => !before || before[k] !== v))
+
   const commit = () => {
-    save('sessions', s)
+    save('sessions', { ...(get('sessions', s.id) || s), ...changes(original.s, s) })
     const keep = new Set(wakes.map((w) => w.id))
-    if (existing) wakesOf(existing).forEach((w) => !keep.has(w.id) && remove('night_wakes', w.id))
-    if (s.kind === 'night') wakes.forEach((w) => save('night_wakes', w))
-    else wakes.forEach((w) => remove('night_wakes', w.id))
+    original.wakes.forEach((w) => !keep.has(w.id) && remove('night_wakes', w.id))
+    for (const w of wakes) {
+      if (s.kind !== 'night') remove('night_wakes', w.id)
+      else {
+        const before = original.wakes.find((o) => o.id === w.id)
+        const patch = changes(before, w)
+        if (Object.keys(patch).length) save('night_wakes', { ...(get('night_wakes', w.id) || w), ...patch })
+      }
+    }
     toast.value = { text: existing ? 'Saved' : 'Added' }
     onClose()
   }
@@ -126,7 +138,7 @@ export function EditSessionSheet({ id, onClose }) {
 
       <label class="toggle">
         <input type="checkbox" checked={!s.asleep_at} onChange={(e) => set({ asleep_at: e.currentTarget.checked ? null : s.started_at })} />
-        Never fell asleep
+        {s.ended_at ? 'Never fell asleep' : 'Not asleep yet'}
       </label>
       {s.asleep_at && (
         <label class="field">

@@ -5,17 +5,17 @@ import { nextUp } from '../lib/schedule.js'
 import { backAsleep, endSession, markAsleep, nightWake, startSession, toggleCheck, toggleFed } from '../lib/actions.js'
 import { HOUR, MIN, atTime, dayKey, fmtClock, fmtDur, fmtMins, ms } from '../lib/time.js'
 import { CHECKLISTS, whatsNormal } from '../content/guide.js'
-import { Alert, Bottle, Check, Eye, Heart, Info, Leaf, Moon, Stop, Sun, Zzz } from './icons.jsx'
+import { Alert, Bottle, Check, Eye, Heart, Info, Leaf, Moon, Pencil, Stop, Sun, Zzz } from './icons.jsx'
 
-export function NowView({ onHold, onPlaybook, onTab }) {
+export function NowView({ onHold, onPlaybook, onTab, onEdit }) {
   const s = active.value
   const t = now.value
   let body
-  if (!s) body = <Awake t={t} onPlaybook={onPlaybook} />
-  else if (!s.asleep_at) body = <Settling s={s} t={t} onHold={onHold} onPlaybook={onPlaybook} />
-  else if (s.kind === 'nap') body = <NapAsleep s={s} t={t} onPlaybook={onPlaybook} />
-  else if (openWake.value) body = <NightAwake s={s} w={openWake.value} t={t} onHold={onHold} onPlaybook={onPlaybook} />
-  else body = <NightAsleep s={s} t={t} />
+  if (!s) body = <Awake t={t} onPlaybook={onPlaybook} onEdit={onEdit} />
+  else if (!s.asleep_at) body = <Settling s={s} t={t} onHold={onHold} onPlaybook={onPlaybook} onEdit={onEdit} />
+  else if (s.kind === 'nap') body = <NapAsleep s={s} t={t} onPlaybook={onPlaybook} onEdit={onEdit} />
+  else if (openWake.value) body = <NightAwake s={s} w={openWake.value} t={t} onHold={onHold} onPlaybook={onPlaybook} onEdit={onEdit} />
+  else body = <NightAsleep s={s} t={t} onEdit={onEdit} />
   return (
     <>
       {body}
@@ -42,6 +42,22 @@ function Timer({ from, t }) {
         </>
       )}
     </div>
+  )
+}
+
+// The big status card. Tapping anywhere on it (other than its buttons) opens
+// the full editor, so a late start can be fixed without leaving the screen.
+function Hero({ kind, onEdit, children }) {
+  const open = (e) => onEdit && !e.target.closest('button') && onEdit()
+  return (
+    <section class={`hero ${kind}${onEdit ? ' tappable' : ''}`} onClick={open}>
+      {onEdit && (
+        <button class="edit-pill" onClick={onEdit} aria-label="Edit times">
+          <Pencil /> Edit
+        </button>
+      )}
+      {children}
+    </section>
   )
 }
 
@@ -114,7 +130,7 @@ function title(s) {
 }
 
 // ─── States ──────────────────────────────────────────────────────────────────
-function Settling({ s, t, onHold, onPlaybook }) {
+function Settling({ s, t, onHold, onPlaybook, onEdit }) {
   const start = ms(s.started_at)
   const limit = (settings.value?.nap_limit_min || 60) * MIN
   const overLimit = s.kind === 'nap' && t - start > limit
@@ -122,7 +138,7 @@ function Settling({ s, t, onHold, onPlaybook }) {
   const n = s.kind === 'night' ? nightNumber(s) : null
   return (
     <>
-      <section class={`hero ${s.kind}`}>
+      <Hero kind={s.kind} onEdit={() => onEdit(s.id)}>
         {s.kind === 'night' ? <MoonDeco /> : <SunDeco />}
         <div class="eyebrow">{s.kind === 'night' ? <Moon /> : <Sun />} {title(s)}</div>
         <div class="status">{s.kind === 'night' ? 'Bedtime — settling' : 'Settling for a nap'}</div>
@@ -143,7 +159,7 @@ function Settling({ s, t, onHold, onPlaybook }) {
             <button class="btn ghost" onClick={() => endSession(s)}>End night</button>
           )}
         </div>
-      </section>
+      </Hero>
       {overLimit && (
         <Banner tone="warn" title="It’s been over an hour" link="What to do" onLink={() => onPlaybook('noSleep')}>
           Time to end this attempt. Get him up calmly — the next window will be shortened.
@@ -155,14 +171,14 @@ function Settling({ s, t, onHold, onPlaybook }) {
   )
 }
 
-function NapAsleep({ s, t, onPlaybook }) {
+function NapAsleep({ s, t, onPlaybook, onEdit }) {
   const asleep = ms(s.asleep_at)
   const age = ageInfo(settings.value, t)
   const cap = (age?.band.napCap || 120) * MIN
   const long = t - asleep > cap
   return (
     <>
-      <section class="hero nap">
+      <Hero kind="nap" onEdit={() => onEdit(s.id)}>
         <SunDeco />
         <div class="eyebrow"><Sun /> {title(s)}</div>
         <div class="status">Napping</div>
@@ -175,7 +191,7 @@ function NapAsleep({ s, t, onPlaybook }) {
             <Sun /> He woke up
           </button>
         </div>
-      </section>
+      </Hero>
       {long ? (
         <Banner tone="warn" title="Nap is running long" link="Why cap naps?" onLink={() => onPlaybook('long')}>
           Past {fmtMins(cap / MIN)}. Wake him gently to protect tonight’s sleep.
@@ -189,7 +205,7 @@ function NapAsleep({ s, t, onPlaybook }) {
   )
 }
 
-function NightAsleep({ s, t }) {
+function NightAsleep({ s, t, onEdit }) {
   const wakes = wakesOf(s)
   const lastBack = wakes.length ? ms(wakes.at(-1).asleep_at) : ms(s.asleep_at)
   const morning = atTime(settings.value?.morning_time?.slice(0, 5) || '06:00', t)
@@ -205,7 +221,7 @@ function NightAsleep({ s, t }) {
     </button>
   )
   return (
-    <section class="hero night">
+    <Hero kind="night" onEdit={() => onEdit(s.id)}>
       <MoonDeco />
       <div class="eyebrow"><Moon /> {title(s)}</div>
       <div class="status">Asleep</div>
@@ -219,11 +235,11 @@ function NightAsleep({ s, t }) {
         {isMorning ? upBtn : wakeBtn}
         {isMorning ? wakeBtn : upBtn}
       </div>
-    </section>
+    </Hero>
   )
 }
 
-function NightAwake({ s, w, t, onHold, onPlaybook }) {
+function NightAwake({ s, w, t, onHold, onPlaybook, onEdit }) {
   const woke = ms(w.woke_at)
   const wakes = wakesOf(s)
   const idx = wakes.findIndex((x) => x.id === w.id) + 1
@@ -257,7 +273,7 @@ function NightAwake({ s, w, t, onHold, onPlaybook }) {
 
   return (
     <>
-      <section class="hero night">
+      <Hero kind="night" onEdit={() => onEdit(s.id)}>
         <MoonDeco />
         <div class="eyebrow"><Moon /> {title(s)} · wake {idx}</div>
         <div class="status">Awake</div>
@@ -276,7 +292,7 @@ function NightAwake({ s, w, t, onHold, onPlaybook }) {
             </button>
           </div>
         </div>
-      </section>
+      </Hero>
       {feedNote}
       {nearMorning && !w.fed && (
         <Banner icon={Info} link="Early waking" onLink={() => onPlaybook('early')}>
@@ -288,7 +304,7 @@ function NightAwake({ s, w, t, onHold, onPlaybook }) {
   )
 }
 
-function Awake({ t, onPlaybook }) {
+function Awake({ t, onPlaybook, onEdit }) {
   const last = lastEnded.value
   const age = ageInfo(settings.value, t)
   const stale = last && t - ms(last.ended_at) > 8 * HOUR
@@ -296,7 +312,7 @@ function Awake({ t, onPlaybook }) {
 
   if (!plan) {
     return (
-      <section class="hero nap">
+      <Hero kind="nap" onEdit={last && (() => onEdit(last.id))}>
         <SunDeco />
         <div class="eyebrow"><Sun /> Awake</div>
         <div class="status">{last ? 'Ready when he is' : 'Welcome'}</div>
@@ -311,7 +327,7 @@ function Awake({ t, onPlaybook }) {
           <button class="btn nap" onClick={() => startSession('nap')}><Sun /> Start nap</button>
           <button class="btn night" onClick={() => startSession('night')}><Moon /> Bedtime</button>
         </div>
-      </section>
+      </Hero>
     )
   }
 
@@ -327,7 +343,7 @@ function Awake({ t, onPlaybook }) {
 
   return (
     <>
-      <section class={`hero ${isBed ? 'night' : 'nap'}`}>
+      <Hero kind={isBed ? 'night' : 'nap'} onEdit={() => onEdit(last.id)}>
         {isBed ? <MoonDeco /> : <SunDeco />}
         <div class="eyebrow">
           <Sun /> {plan.isMorning ? 'Good morning' : `After nap ${plan.index}`}
@@ -355,7 +371,7 @@ function Awake({ t, onPlaybook }) {
             Start {isBed ? 'a nap' : 'bedtime'} instead
           </button>
         </div>
-      </section>
+      </Hero>
 
       {plan.reason === 'short' && (
         <Banner title="Short nap" link="Short-nap plan" onLink={() => onPlaybook('short')}>

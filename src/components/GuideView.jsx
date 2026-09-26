@@ -3,7 +3,7 @@ import { now, resetDemo, save, settings, signOut, user } from '../lib/store.js'
 import { DEMO } from '../lib/supabase.js'
 import { ageInfo, wakeWindow } from '../lib/age.js'
 import { fmtMins } from '../lib/time.js'
-import { AGE_NOTE, GO_IN_IF, PLAN, PLAYBOOK, RESEARCH, SAFE_SLEEP } from '../content/guide.js'
+import { GO_IN_IF, PLAN, PLAYBOOK, RESEARCH } from '../content/guide.js'
 
 const clock = (hm) => {
   const [h, m] = hm.split(':').map(Number)
@@ -63,13 +63,6 @@ export function GuideView({ focus }) {
         </details>
       ))}
 
-      <div class="section-label">Safe sleep</div>
-      <section class="card">
-        <ul style="margin:0;padding-left:20px">
-          {SAFE_SLEEP.map((x) => <li key={x} style="margin-bottom:6px">{x}</li>)}
-        </ul>
-      </section>
-
       <div class="section-label">The research</div>
       <section class="card">
         {RESEARCH.map((r) => (
@@ -116,7 +109,6 @@ function AgeCard({ age, name }) {
           From {age.nextDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} ({age.next.label}): windows {fmtMins(age.next.ww[0])}–{fmtMins(age.next.ww[1])}, {age.next.naps[0] === age.next.naps[1] ? age.next.naps[0] : `${age.next.naps[0]}–${age.next.naps[1]}`} naps. The app switches over automatically.
         </p>
       )}
-      {age.adjDays < 180 && <div class="why">{AGE_NOTE}</div>}
     </section>
   )
 }
