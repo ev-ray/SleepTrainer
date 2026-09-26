@@ -25,7 +25,7 @@ export const active = computed(() => {
 
 export const openWake = computed(() => {
   const s = active.value
-  if (!s || s.kind !== 'night') return null
+  if (!s || !s.asleep_at) return null
   return wakesOf(s).find((w) => !w.asleep_at) || null
 })
 
@@ -77,7 +77,7 @@ export const days = computed(() => {
 })
 
 export function daySummary(d, nowMs = Date.now()) {
-  const naps = d.naps.map((s) => ({ s, st: stats(s, [], nowMs) }))
+  const naps = d.naps.map((s) => ({ s, st: stats(s, wakesOf(s), nowMs) }))
   const night = d.nights[0] ? { s: d.nights[0], st: stats(d.nights[0], wakesOf(d.nights[0]), nowMs) } : null
   const napSleep = naps.reduce((a, n) => a + n.st.sleep, 0)
   const napLatencies = naps.filter((n) => n.st.latency != null).map((n) => n.st.latency)

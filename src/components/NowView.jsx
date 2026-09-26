@@ -1,7 +1,7 @@
 import { db, nameOf, now, settings } from '../lib/store.js'
 import { active, lastEnded, lastFeed, nightNumber, openWake, recentWakeWindow, sortedSessions, stats, wakesOf, days, daySummary } from '../lib/metrics.js'
 import { ageInfo, SHORT_NAP_MIN } from '../lib/age.js'
-import { nextUp } from '../lib/schedule.js'
+import { napWakeAdvice, nextUp } from '../lib/schedule.js'
 import { backAsleep, endSession, markAsleep, nightWake, startSession, toggleCheck, toggleFed } from '../lib/actions.js'
 import { HOUR, MIN, atTime, dayKey, fmtClock, fmtDur, fmtMins, ms } from '../lib/time.js'
 import { CHECKLISTS, whatsNormal } from '../content/guide.js'
@@ -13,6 +13,7 @@ export function NowView({ onHold, onPlaybook, onTab, onEdit }) {
   let body
   if (!s) body = <Awake t={t} onPlaybook={onPlaybook} onEdit={onEdit} />
   else if (!s.asleep_at) body = <Settling s={s} t={t} onHold={onHold} onPlaybook={onPlaybook} onEdit={onEdit} />
+  else if (s.kind === 'nap' && openWake.value) body = <NapStirring s={s} w={openWake.value} t={t} onHold={onHold} onEdit={onEdit} />
   else if (s.kind === 'nap') body = <NapAsleep s={s} t={t} onPlaybook={onPlaybook} onEdit={onEdit} />
   else if (openWake.value) body = <NightAwake s={s} w={openWake.value} t={t} onHold={onHold} onPlaybook={onPlaybook} onEdit={onEdit} />
   else body = <NightAsleep s={s} t={t} onEdit={onEdit} />
@@ -173,34 +174,88 @@ function Settling({ s, t, onHold, onPlaybook, onEdit }) {
 
 function NapAsleep({ s, t, onPlaybook, onEdit }) {
   const asleep = ms(s.asleep_at)
+  const wakes = wakesOf(s)
+  const stretchFrom = wakes.length ? ms(wakes.at(-1).asleep_at) : asleep
+  const st = stats(s, wakes, t)
   const age = ageInfo(settings.value, t)
   const cap = (age?.band.napCap || 120) * MIN
-  const long = t - asleep > cap
+  const long = st.sleep > cap
   return (
     <>
       <Hero kind="nap" onEdit={() => onEdit(s.id)}>
         <SunDeco />
         <div class="eyebrow"><Sun /> {title(s)}</div>
-        <div class="status">Napping</div>
-        <Timer from={asleep} t={t} />
+        <div class="status">{wakes.length ? 'Back asleep' : 'Napping'}</div>
+        <Timer from={stretchFrom} t={t} />
         <div class="sub">
-          Asleep at {fmtClock(asleep)} · took {fmtDur(asleep - ms(s.started_at))} · wake by {fmtClock(asleep + cap)}
+          {wakes.length
+            ? `Resettled at ${fmtClock(stretchFrom)} · ${fmtDur(st.sleep)} asleep in total`
+            : `Asleep at ${fmtClock(asleep)} · took ${fmtDur(asleep - ms(s.started_at))}`}
+          {' · '}wake by {fmtClock(t + Math.max(0, cap - st.sleep))}
         </div>
         <div class="actions">
-          <button class="btn primary" onClick={() => endSession(s)}>
-            <Sun /> He woke up
+          <button class="btn primary" onClick={() => nightWake(s)}>
+            <Eye /> He woke up
           </button>
+          <button class="btn ghost" onClick={() => endSession(s)}>Nap’s over — get him up</button>
         </div>
       </Hero>
       {long ? (
         <Banner tone="warn" title="Nap is running long" link="Why cap naps?" onLink={() => onPlaybook('long')}>
           Past {fmtMins(cap / MIN)}. Wake him gently to protect tonight’s sleep.
         </Banner>
-      ) : t - asleep < SHORT_NAP_MIN * MIN ? (
+      ) : !wakes.length && t - asleep < SHORT_NAP_MIN * MIN ? (
         <Banner icon={Leaf}>
-          If he wakes before {fmtClock(asleep + SHORT_NAP_MIN * MIN)} and he’s upset, give him 10–20 minutes to try to resettle.
+          If he wakes early, tap “He woke up” — the app will tell you whether to wait for him to resettle.
         </Banner>
       ) : null}
+    </>
+  )
+}
+
+// Woke mid-nap: the nap isn't over until we decide it is.
+function NapStirring({ s, w, t, onHold, onEdit }) {
+  const woke = ms(w.woke_at)
+  const age = ageInfo(settings.value, t)
+  const a = napWakeAdvice({ s, wake: w, band: age?.band, nowMs: t })
+  const callIt = a.verdict === 'up' || a.expired
+  const left = a.deadline ? a.deadline - t : 0
+  const upBtn = (
+    <button class={`btn ${callIt ? 'primary' : 'secondary'}`} onClick={() => endSession(s)}>
+      <Sun /> Nap’s over
+    </button>
+  )
+  const backBtn = (
+    <button class={`btn ${callIt ? 'secondary' : 'primary'}`} onClick={() => backAsleep(w)}>
+      <Zzz /> Back asleep
+    </button>
+  )
+  return (
+    <>
+      <Hero kind="nap" onEdit={() => onEdit(s.id)}>
+        <SunDeco />
+        <div class="eyebrow"><Sun /> {title(s)} · stirring</div>
+        <div class="status">Awake in the crib</div>
+        <Timer from={woke} t={t} />
+        <div class="sub">
+          Woke at {fmtClock(woke)} after {fmtDur(a.slept)} asleep
+          {a.deadline && !a.expired && ` · wait until ${a.deadlineLabel} (${Math.ceil(left / MIN)}m left)`}
+        </div>
+        <div class="actions">
+          {callIt ? upBtn : backBtn}
+          {callIt ? backBtn : upBtn}
+        </div>
+      </Hero>
+      {a.expired ? (
+        <Banner tone="warn" title="Time’s up — the nap is over">
+          He’s had {fmtDur(t - woke)} to resettle. Get him up{a.slept < SHORT_NAP_MIN * MIN ? ' — the next wake window will be shortened for the short nap.' : ' and start the next wake window.'}
+        </Banner>
+      ) : (
+        <Banner tone="calm" icon={a.verdict === 'up' ? Sun : Leaf} title={a.title}>
+          {a.body}
+        </Banner>
+      )}
+      {!callIt && <HoldBanner onHold={onHold} text="Hard to listen to? He’s practicing." />}
     </>
   )
 }

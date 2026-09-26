@@ -56,6 +56,7 @@ function Day({ sum, today, onEdit }) {
 }
 
 function NapEntry({ s, st, n, onEdit }) {
+  const wakes = wakesOf(s)
   return (
     <button class="entry nap" onClick={() => onEdit(s.id)}>
       <div class="top">
@@ -71,9 +72,16 @@ function NapEntry({ s, st, n, onEdit }) {
             <b>{fmtClock(st.asleep)}</b> asleep after {fmtDur(st.latency)} <span class="by">· {nameOf(s.asleep_by)}</span>
           </li>
         )}
+        {wakes.map((w) => (
+          <li key={w.id} class="wake">
+            <b>{fmtClock(ms(w.woke_at))}</b> stirred
+            {w.asleep_at ? ` · resettled after ${fmtDur(ms(w.asleep_at) - ms(w.woke_at))}` : ' · awake'}{' '}
+            <span class="by">· {nameOf(w.logged_by)}</span>
+          </li>
+        ))}
         {s.ended_at && (
           <li>
-            <b>{fmtClock(st.end)}</b> {st.noSleep ? 'attempt ended' : 'woke'} <span class="by">· {nameOf(s.ended_by)}</span>
+            <b>{fmtClock(st.end)}</b> {st.noSleep ? 'attempt ended' : 'up'} <span class="by">· {nameOf(s.ended_by)}</span>
           </li>
         )}
       </ul>

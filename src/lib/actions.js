@@ -27,8 +27,8 @@ export function markAsleep(s) {
   })
 }
 
-// Ends a nap or a night. If he's mid-wake when the night ends, that wake was
-// really "up for the day", so it's folded into the end time.
+// Ends a nap or a night. If he's mid-wake when it ends, that wake was
+// really the end of the sleep, so it's folded into the end time.
 export function endSession(s) {
   const before = get('sessions', s.id)
   const open = wakesOf(s).find((w) => !w.asleep_at)
@@ -50,7 +50,7 @@ export function nightWake(s) {
   const w = save('night_wakes', {
     id: uuid(), session_id: s.id, woke_at: iso(), asleep_at: null, fed: false, logged_by: me(), notes: null,
   })
-  announce('Wake logged', () => remove('night_wakes', w.id), {
+  announce(s.kind === 'nap' ? 'Woke — nap still open' : 'Wake logged', () => remove('night_wakes', w.id), {
     table: 'night_wakes', id: w.id, field: 'woke_at', label: 'Woke',
   })
 }

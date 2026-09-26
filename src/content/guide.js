@@ -83,11 +83,12 @@ export const PLAYBOOK = [
   },
   {
     id: 'short',
-    title: 'Short nap (under 45 minutes)',
+    title: 'He woke early from a nap',
     steps: [
-      'If he wakes upset, it’s reasonable to give him 10–20 minutes to try to resettle before calling it.',
-      'If he wakes happy, or doesn’t resettle, get him up.',
-      'The next wake window is shortened by ~15 minutes — already in the countdown.',
+      'Tap “He woke up” — the nap stays open and the app tells you whether to wait.',
+      'Under 45 minutes asleep: leave him up to 20 minutes to resettle, whether he’s chatting or crying. If he’s already resettled once this nap, give it 10.',
+      '45–75 minutes: a 10-minute wait is optional. Over 75 minutes, or late in the day: get him up.',
+      'If he falls back asleep, tap “Back asleep.” If the wait runs out, tap “Nap’s over.” A short nap shortens the next wake window by ~15 minutes automatically.',
     ],
     why: 'One-sleep-cycle naps (30–45 minutes) are very common until around 5–6 months. They lengthen on their own as he matures.',
   },

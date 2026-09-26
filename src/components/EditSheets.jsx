@@ -84,8 +84,13 @@ export function EditSessionSheet({ id, onClose }) {
   if (!s.started_at) problems.push('Needs a start time.')
   if (s.asleep_at && ms(s.asleep_at) < ms(s.started_at)) problems.push('“Fell asleep” is before “put down”.')
   if (s.ended_at && ms(s.ended_at) < ms(s.asleep_at || s.started_at)) problems.push('End is before it started.')
+  let prevEnd = ms(s.asleep_at)
   wakes.forEach((w, i) => {
+    if (!w.woke_at) problems.push(`Wake ${i + 1}: needs a time.`)
+    else if (prevEnd && ms(w.woke_at) < prevEnd) problems.push(`Wake ${i + 1} starts before he was asleep.`)
     if (w.asleep_at && ms(w.asleep_at) < ms(w.woke_at)) problems.push(`Wake ${i + 1}: back asleep before it woke.`)
+    if (s.ended_at && ms(w.woke_at) > ms(s.ended_at)) problems.push(`Wake ${i + 1} is after the end.`)
+    prevEnd = ms(w.asleep_at) || ms(w.woke_at)
   })
 
   const changes = (before, after) =>
@@ -96,7 +101,7 @@ export function EditSessionSheet({ id, onClose }) {
     const keep = new Set(wakes.map((w) => w.id))
     original.wakes.forEach((w) => !keep.has(w.id) && remove('night_wakes', w.id))
     for (const w of wakes) {
-      if (s.kind !== 'night') remove('night_wakes', w.id)
+      if (!s.asleep_at) remove('night_wakes', w.id)
       else {
         const before = original.wakes.find((o) => o.id === w.id)
         const patch = changes(before, w)
@@ -147,9 +152,9 @@ export function EditSessionSheet({ id, onClose }) {
         </label>
       )}
 
-      {s.kind === 'night' && (
+      {s.asleep_at && (
         <>
-          <div class="section-label" style="margin-top:14px">Night wakes</div>
+          <div class="section-label" style="margin-top:14px">{s.kind === 'night' ? 'Night wakes' : 'Woke during the nap'}</div>
           {wakes.map((w, i) => (
             <div class="wake-edit" key={w.id}>
               <div class="grid2">
@@ -163,9 +168,13 @@ export function EditSessionSheet({ id, onClose }) {
                 </label>
               </div>
               <div class="spread">
-                <label class="toggle">
-                  <input type="checkbox" checked={w.fed} onChange={(e) => setWake(i, { fed: e.currentTarget.checked })} /> Fed
-                </label>
+                {s.kind === 'night' ? (
+                  <label class="toggle">
+                    <input type="checkbox" checked={w.fed} onChange={(e) => setWake(i, { fed: e.currentTarget.checked })} /> Fed
+                  </label>
+                ) : (
+                  <span />
+                )}
                 <button class="btn ghost small" onClick={() => setWakes(wakes.filter((_, j) => j !== i))}>Remove</button>
               </div>
             </div>
@@ -173,8 +182,9 @@ export function EditSessionSheet({ id, onClose }) {
           <button
             class="btn secondary small"
             onClick={() => {
-              const base = ms(wakes.at(-1)?.asleep_at || s.asleep_at || s.started_at) + HOUR
-              setWakes([...wakes, { id: uuid(), session_id: s.id, woke_at: iso(base), asleep_at: iso(base + 15 * MIN), fed: false, logged_by: me(), notes: null }])
+              const nap = s.kind === 'nap'
+              const base = ms(wakes.at(-1)?.asleep_at || s.asleep_at || s.started_at) + (nap ? 40 * MIN : HOUR)
+              setWakes([...wakes, { id: uuid(), session_id: s.id, woke_at: iso(base), asleep_at: iso(base + (nap ? 10 : 15) * MIN), fed: false, logged_by: me(), notes: null }])
             }}
           >
             <Plus /> Add wake
