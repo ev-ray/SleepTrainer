@@ -340,7 +340,7 @@ function Awake({ t, onPlaybook }) {
         </div>
         <div class="ww">
           <div class="bar">
-            <div class={`fill ${inWindDown ? 'soon' : ''}`} style={{ width: `${pct}%` }} />
+            <div class={`fill ${inWindDown ? 'soon' : ''}`} style={{ transform: `translateX(${pct - 100}%)` }} />
           </div>
           <div class="labels">
             <span>Wind down {fmtClock(plan.windDownAt)}</span>

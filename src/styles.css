@@ -177,7 +177,7 @@ main { flex: 1; padding: 6px 16px calc(96px + var(--safe-bottom)); max-width: 56
 /* wake-window progress */
 .ww { margin-top: 16px; }
 .ww .bar { height: 10px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 18%, transparent); overflow: hidden; }
-.ww .fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 1s linear; }
+.ww .fill { height: 100%; width: 100%; border-radius: 99px; background: var(--accent); transition: transform 1s linear; }
 .ww .fill.soon { background: var(--warn); }
 .ww .labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); margin-top: 6px; }
 
@@ -286,8 +286,7 @@ details.acc li + li { margin-top: 6px; }
 .plan-step + .plan-step { margin-top: 14px; }
 .plan-step .n { width: 28px; height: 28px; border-radius: 50%; background: var(--night-soft); color: var(--night-strong); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
 .plan-step p { font-size: 14.5px; color: var(--ink-2); margin-top: 2px; }
-.research { border-left: 3px solid var(--night); padding-left: 12px; }
-.research + .research { margin-top: 16px; }
+.research + .research { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
 .research .src { font-size: 12.5px; color: var(--ink-3); }
 .research .src a { color: var(--ink-3); }
 .research .take { font-weight: 600; margin-top: 4px; }
