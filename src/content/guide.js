@@ -108,7 +108,7 @@ export const PLAYBOOK = [
       'Check the wake card: if it’s been long enough since his last feed (per your plan), this is a feed.',
       'Feed: lights low, no talking or play, burp, diaper only if needed, back down awake, leave.',
       'Not a feed: stay out. Crying at a night wake shortens fastest when the response is the same every time.',
-      'Tap “Back asleep” when it’s quiet — you don’t need to be exact, you can fix times later.',
+      'Tap “Back asleep” when it’s quiet. If it was a feed, pick “Fed, back asleep” so the next wake knows when he last ate. You don’t need to be exact; you can fix times later.',
     ],
   },
   {
@@ -116,7 +116,8 @@ export const PLAYBOOK = [
     title: 'Awake before morning time',
     steps: [
       'Treat it exactly like a night wake until your morning time.',
-      'If he’s still awake at morning time, get him up with lights on and a bright, cheerful start. Log “Up for the day.”',
+      'Near morning, the wake card works out when to start the day from when he fell asleep, time awake overnight and how much he napped yesterday. Wait until the time it gives.',
+      'If he’s still awake then, get him up with lights on and a bright, cheerful start. Log “Up for the day.”',
       'Early waking often means bedtime is too late or the last wake window is too long — try moving bedtime 15 minutes earlier for a few days.',
     ],
   },

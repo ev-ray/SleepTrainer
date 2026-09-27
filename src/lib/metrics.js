@@ -1,6 +1,6 @@
 import { computed } from '@preact/signals'
 import { db, settings } from './store.js'
-import { DAY, HOUR, ms, dayKey } from './time.js'
+import { ms, dayKey } from './time.js'
 
 const byStart = (a, b) => ms(a.started_at) - ms(b.started_at)
 
@@ -102,22 +102,6 @@ export function nightNumber(s) {
   const i = nightsInTraining.value.findIndex((n) => n.id === s.id)
   return i === -1 ? null : i + 1
 }
-
-// His actual average wake window over the past week (minutes).
-export const recentWakeWindow = computed(() => {
-  const list = sortedSessions.value
-  const cutoff = Date.now() - 7 * DAY
-  const samples = []
-  for (let i = 1; i < list.length; i++) {
-    const p = list[i - 1]
-    const s = list[i]
-    if (s.kind !== 'nap' || !p.ended_at || ms(s.started_at) < cutoff) continue
-    const gap = ms(s.started_at) - ms(p.ended_at)
-    if (gap > 0 && gap < 5 * HOUR) samples.push(gap)
-  }
-  if (samples.length < 3) return null
-  return Math.round(samples.reduce((a, b) => a + b, 0) / samples.length / 60000)
-})
 
 // When he last ate overnight: the last fed wake, or bedtime (the routine feed).
 export function lastFeed(s) {

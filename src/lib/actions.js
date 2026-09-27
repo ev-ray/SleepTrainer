@@ -55,10 +55,12 @@ export function nightWake(s) {
   })
 }
 
-export function backAsleep(w) {
+// `fed` records whether this wake was a feed at the moment he goes back down,
+// so a feed can't be lost to a stray tap on the Feeding toggle.
+export function backAsleep(w, fed) {
   const before = get('night_wakes', w.id)
-  save('night_wakes', { ...w, asleep_at: iso() })
-  announce('Back asleep', () => restoreRow('night_wakes', before, w.id), {
+  save('night_wakes', { ...w, asleep_at: iso(), fed: fed ?? w.fed })
+  announce(fed ? 'Fed and back asleep' : 'Back asleep', () => restoreRow('night_wakes', before, w.id), {
     table: 'night_wakes', id: w.id, field: 'asleep_at', label: 'Back asleep',
   })
 }

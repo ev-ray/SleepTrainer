@@ -1,7 +1,7 @@
 import { db, nameOf, now, settings } from '../lib/store.js'
-import { active, lastEnded, lastFeed, nightNumber, openWake, recentWakeWindow, sortedSessions, stats, wakesOf, days, daySummary } from '../lib/metrics.js'
+import { active, lastEnded, lastFeed, nightNumber, openWake, sortedSessions, stats, wakesOf, days, daySummary } from '../lib/metrics.js'
 import { ageInfo, SHORT_NAP_MIN } from '../lib/age.js'
-import { napWakeAdvice, nextUp } from '../lib/schedule.js'
+import { morningWakeAdvice, napWakeAdvice, nextUp } from '../lib/schedule.js'
 import { backAsleep, endSession, markAsleep, nightWake, startSession, toggleCheck, toggleFed } from '../lib/actions.js'
 import { HOUR, MIN, atTime, dayKey, fmtClock, fmtDur, fmtMins, ms } from '../lib/time.js'
 import { CHECKLISTS, whatsNormal } from '../content/guide.js'
@@ -299,19 +299,31 @@ function NightAwake({ s, w, t, onHold, onPlaybook, onEdit }) {
   const wakes = wakesOf(s)
   const idx = wakes.findIndex((x) => x.id === w.id) + 1
   const interval = Number(settings.value?.feed_interval_hours) || null
-  const fedAt = lastFeed({ ...s, id: s.id })
+  const fedAt = lastFeed(s)
   const sinceFeed = woke - fedAt
+  const feedDue = interval ? sinceFeed >= interval * HOUR : null
   const morningStr = settings.value?.morning_time?.slice(0, 5) || '06:00'
   const morning = atTime(morningStr, t)
   const nearMorning = t < morning && morning - t < 2 * HOUR
+  const age = ageInfo(settings.value, t)
+  const m = morningWakeAdvice({ s, wake: w, band: age?.band, sessions: sortedSessions.value, morningTime: morningStr, nowMs: t })
+  const callIt = m && (m.verdict === 'up' || m.expired)
+  const left = m?.deadline ? m.deadline - t : 0
+
+  // A long wake since the last logged feed that isn't marked as one was
+  // probably a feed someone forgot to log — it would restart the feed clock.
+  const missed = wakes
+    .filter((x) => x.id !== w.id && !x.fed && ms(x.woke_at) > fedAt && ms(x.woke_at) < woke && x.asleep_at)
+    .filter((x) => ms(x.asleep_at) - ms(x.woke_at) >= 15 * MIN)
+    .at(-1)
 
   let feedNote
   if (w.fed) feedNote = <Banner tone="calm" icon={Bottle} title="Feeding">Keep it dark and boring. Burp, then back down awake.</Banner>
+  else if (callIt) feedNote = null
   else if (interval) {
-    const due = sinceFeed >= interval * HOUR
-    feedNote = due ? (
+    feedNote = feedDue ? (
       <Banner tone="calm" icon={Bottle} title="This can be a feed">
-        Last fed {fmtDur(sinceFeed)} before this wake — your plan is every {interval}h or more.
+        Last fed {fmtDur(sinceFeed)} before this wake. Your plan is every {interval}h or more.
       </Banner>
     ) : (
       <Banner icon={Moon} title="Not a feed — stay out" link="Night-wake plan" onLink={() => onPlaybook('nightWake')}>
@@ -326,35 +338,78 @@ function NightAwake({ s, w, t, onHold, onPlaybook, onEdit }) {
     )
   }
 
+  // When a feed is on the table, going back down asks whether he ate, so the
+  // feed clock is always right the next time he wakes.
+  const askFed = !w.fed && !callIt && feedDue !== false
+  const upBtn = (
+    <button class={`btn ${callIt ? 'primary' : 'secondary'}`} onClick={() => endSession(s)}>
+      <Sun /> Up for {callIt ? 'the day' : 'day'}
+    </button>
+  )
+  const feedBtn = (
+    <button class="btn secondary" onClick={() => toggleFed(w)} aria-pressed={w.fed}>
+      {w.fed ? <Check /> : <Bottle />} {w.fed ? 'Fed · undo' : 'Log a feed'}
+    </button>
+  )
+
   return (
     <>
       <Hero kind="night" onEdit={() => onEdit(s.id)}>
         <MoonDeco />
-        <div class="eyebrow"><Moon /> {title(s)} · wake {idx}</div>
+        <div class="eyebrow"><Moon /> {title(s)} · {m ? 'early morning' : `wake ${idx}`}</div>
         <div class="status">Awake</div>
         <Timer from={woke} t={t} />
-        <div class="sub">Woke at {fmtClock(woke)} · {nameOf(w.logged_by)}</div>
+        <div class="sub">
+          Woke at {fmtClock(woke)} · {nameOf(w.logged_by)}
+          {m?.deadline && !m.expired && ` · wait until ${m.deadlineLabel} (${Math.ceil(left / MIN)}m left)`}
+        </div>
         <div class="actions">
-          <button class="btn primary" onClick={() => backAsleep(w)}>
-            <Zzz /> Back asleep
-          </button>
-          <div class="actions two" style="margin-top:0">
-            <button class="btn secondary" onClick={() => toggleFed(w)} aria-pressed={w.fed}>
-              {w.fed ? <Check /> : <Bottle />} {w.fed ? 'Fed' : 'Feeding'}
-            </button>
-            <button class="btn secondary" onClick={() => endSession(s)}>
-              <Sun /> Up for day
-            </button>
-          </div>
+          {callIt ? (
+            <>
+              {upBtn}
+              <button class="btn secondary" onClick={() => backAsleep(w)}><Zzz /> Back asleep</button>
+            </>
+          ) : askFed ? (
+            <>
+              <div class="actions two" style="margin-top:0">
+                <button class="btn primary" onClick={() => backAsleep(w, true)}><Bottle /> Fed, back asleep</button>
+                <button class="btn primary" onClick={() => backAsleep(w, false)}><Zzz /> Back asleep, no feed</button>
+              </div>
+              <button class="btn ghost" onClick={() => endSession(s)}>Up for the day</button>
+            </>
+          ) : (
+            <>
+              <button class="btn primary" onClick={() => backAsleep(w)}><Zzz /> Back asleep</button>
+              <div class="actions two" style="margin-top:0">
+                {feedBtn}
+                {upBtn}
+              </div>
+            </>
+          )}
         </div>
       </Hero>
+      {m &&
+        (m.expired ? (
+          <Banner tone="warn" icon={Sun} title="Time to start the day">
+            It’s {m.deadlineLabel}. Get him up with lights on and a cheerful hello, even if he’s crying.
+          </Banner>
+        ) : (
+          <Banner tone="calm" icon={m.verdict === 'up' ? Sun : Leaf} title={m.title} link={m.verdict === 'wait' ? 'Early waking' : null} onLink={() => onPlaybook('early')}>
+            {m.body}
+          </Banner>
+        ))}
+      {missed && !callIt && (
+        <Banner icon={Bottle} title={`Did he feed at ${fmtClock(ms(missed.woke_at))}?`} link="Yes, mark it as a feed" onLink={() => toggleFed(missed)}>
+          That wake lasted {fmtDur(ms(missed.asleep_at) - ms(missed.woke_at))} but isn’t logged as a feed, so the feed clock still counts from {fmtClock(fedAt)}.
+        </Banner>
+      )}
       {feedNote}
-      {nearMorning && !w.fed && (
+      {nearMorning && !w.fed && !m && (
         <Banner icon={Info} link="Early waking" onLink={() => onPlaybook('early')}>
           Before {fmtClock(morning)} is still night — respond the same way.
         </Banner>
       )}
-      {!w.fed && <HoldBanner onHold={onHold} text="Crying is hard. You’re doing the right thing." />}
+      {!w.fed && !callIt && <HoldBanner onHold={onHold} text="Crying is hard. You’re doing the right thing." />}
     </>
   )
 }
@@ -394,7 +449,7 @@ function Awake({ t, onPlaybook, onEdit }) {
   const over = left < -20 * MIN
   const isBed = plan.kind === 'night'
   const what = isBed ? 'Bedtime' : `Nap ${plan.napNumber}`
-  const recent = recentWakeWindow.value
+  const pctOff = Math.round((plan.fit.factor - 1) * 100)
 
   return (
     <>
@@ -438,6 +493,16 @@ function Awake({ t, onPlaybook, onEdit }) {
           It happens, especially early on. Next window pulled in 20 minutes; aim for the next nap on time.
         </Banner>
       )}
+      {plan.reason === 'long' && (
+        <Banner icon={Leaf} title="Great nap">
+          He’s well rested, so this window runs a little longer.
+        </Banner>
+      )}
+      {plan.reason === 'shortNight' && (
+        <Banner title="Short night">
+          He’ll tire sooner this morning, so the first window is 15 minutes shorter.
+        </Banner>
+      )}
       {over && (
         <Banner tone="warn" title="Past his window">
           He’s been up {fmtDur(elapsed)}. Start the wind-down now — overtired babies fight sleep harder.
@@ -449,7 +514,8 @@ function Awake({ t, onPlaybook, onEdit }) {
       {age && (
         <p class="tiny" style="margin:-4px 6px 12px">
           Windows at {age.band.label}: {fmtMins(age.band.ww[0])}–{fmtMins(age.band.ww[1])}, shortest in the morning.
-          {recent && ` His average this week: ${fmtMins(recent)}.`}
+          {Math.abs(pctOff) >= 5 &&
+            ` His last few days of naps say he does best on windows about ${Math.abs(pctOff)}% ${pctOff < 0 ? 'shorter' : 'longer'}, so the plan follows him. It keeps adjusting as you log.`}
         </p>
       )}
     </>
