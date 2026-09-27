@@ -5,17 +5,17 @@ import { morningWakeAdvice, napWakeAdvice, nextUp } from '../lib/schedule.js'
 import { backAsleep, endSession, markAsleep, nightWake, startSession, toggleCheck, toggleFed } from '../lib/actions.js'
 import { HOUR, MIN, atTime, dayKey, fmtClock, fmtDur, fmtMins, ms } from '../lib/time.js'
 import { CHECKLISTS, whatsNormal } from '../content/guide.js'
-import { Alert, Bottle, Check, Eye, Heart, Info, Leaf, Moon, Pencil, Stop, Sun, Zzz } from './icons.jsx'
+import { Alert, Bottle, Check, Eye, Info, Leaf, Moon, Pencil, Stop, Sun, Zzz } from './icons.jsx'
 
-export function NowView({ onHold, onPlaybook, onTab, onEdit }) {
+export function NowView({ onPlaybook, onTab, onEdit }) {
   const s = active.value
   const t = now.value
   let body
   if (!s) body = <Awake t={t} onPlaybook={onPlaybook} onEdit={onEdit} />
-  else if (!s.asleep_at) body = <Settling s={s} t={t} onHold={onHold} onPlaybook={onPlaybook} onEdit={onEdit} />
-  else if (s.kind === 'nap' && openWake.value) body = <NapStirring s={s} w={openWake.value} t={t} onHold={onHold} onEdit={onEdit} />
+  else if (!s.asleep_at) body = <Settling s={s} t={t} onPlaybook={onPlaybook} onEdit={onEdit} />
+  else if (s.kind === 'nap' && openWake.value) body = <NapStirring s={s} w={openWake.value} t={t} onEdit={onEdit} />
   else if (s.kind === 'nap') body = <NapAsleep s={s} t={t} onPlaybook={onPlaybook} onEdit={onEdit} />
-  else if (openWake.value) body = <NightAwake s={s} w={openWake.value} t={t} onHold={onHold} onPlaybook={onPlaybook} onEdit={onEdit} />
+  else if (openWake.value) body = <NightAwake s={s} w={openWake.value} t={t} onPlaybook={onPlaybook} onEdit={onEdit} />
   else body = <NightAsleep s={s} t={t} onEdit={onEdit} />
   return (
     <>
@@ -78,20 +78,6 @@ function SunDeco() {
   )
 }
 
-function HoldBanner({ onHold, text }) {
-  return (
-    <div class="banner heart">
-      <Heart />
-      <div>
-        <b>{text || 'Hard to listen to?'}</b>
-        <span class="small">Take a breath before you go in.</span>
-        <br />
-        <button class="link" onClick={onHold}>Hold steady</button>
-      </div>
-    </div>
-  )
-}
-
 function Banner({ tone = 'calm', icon, title, children, link, onLink }) {
   const Icon = icon || (tone === 'warn' ? Alert : Info)
   return (
@@ -131,7 +117,7 @@ function title(s) {
 }
 
 // ─── States ──────────────────────────────────────────────────────────────────
-function Settling({ s, t, onHold, onPlaybook, onEdit }) {
+function Settling({ s, t, onPlaybook, onEdit }) {
   const start = ms(s.started_at)
   const limit = (settings.value?.nap_limit_min || 60) * MIN
   const overLimit = s.kind === 'nap' && t - start > limit
@@ -167,7 +153,6 @@ function Settling({ s, t, onHold, onPlaybook, onEdit }) {
         </Banner>
       )}
       {s.kind === 'night' && n && <Banner icon={Moon}>{whatsNormal(n)}</Banner>}
-      <HoldBanner onHold={onHold} />
     </>
   )
 }
@@ -214,7 +199,7 @@ function NapAsleep({ s, t, onPlaybook, onEdit }) {
 }
 
 // Woke mid-nap: the nap isn't over until we decide it is.
-function NapStirring({ s, w, t, onHold, onEdit }) {
+function NapStirring({ s, w, t, onEdit }) {
   const woke = ms(w.woke_at)
   const age = ageInfo(settings.value, t)
   const a = napWakeAdvice({ s, wake: w, band: age?.band, nowMs: t })
@@ -255,7 +240,6 @@ function NapStirring({ s, w, t, onHold, onEdit }) {
           {a.body}
         </Banner>
       )}
-      {!callIt && <HoldBanner onHold={onHold} text="Hard to listen to? He’s practicing." />}
     </>
   )
 }
@@ -294,7 +278,7 @@ function NightAsleep({ s, t, onEdit }) {
   )
 }
 
-function NightAwake({ s, w, t, onHold, onPlaybook, onEdit }) {
+function NightAwake({ s, w, t, onPlaybook, onEdit }) {
   const woke = ms(w.woke_at)
   const wakes = wakesOf(s)
   const idx = wakes.findIndex((x) => x.id === w.id) + 1
@@ -409,7 +393,6 @@ function NightAwake({ s, w, t, onHold, onPlaybook, onEdit }) {
           Before {fmtClock(morning)} is still night — respond the same way.
         </Banner>
       )}
-      {!w.fed && !callIt && <HoldBanner onHold={onHold} text="Crying is hard. You’re doing the right thing." />}
     </>
   )
 }

@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks'
 import { nameOf, now } from '../lib/store.js'
 import { days, daySummary, nightNumber, stats, wakesOf } from '../lib/metrics.js'
 import { dayKey, fmtClock, fmtDay, fmtDur, ms } from '../lib/time.js'
-import { Moon, Plus, Sun } from './icons.jsx'
+import { Chevron, Moon, Pencil, Plus, Sun } from './icons.jsx'
 
 export function HistoryView({ onEdit, onAdd }) {
   const [limit, setLimit] = useState(10)
@@ -23,7 +23,7 @@ export function HistoryView({ onEdit, onAdd }) {
   return (
     <>
       <div class="spread" style="margin:8px 4px 0">
-        <span class="tiny">Tap anything to fix it.</span>
+        <span class="tiny">Tap a sleep to see every step.</span>
         <button class="btn secondary small" onClick={onAdd}><Plus /> Add past sleep</button>
       </div>
       {keys.slice(0, limit).map((k) => (
@@ -55,14 +55,48 @@ function Day({ sum, today, onEdit }) {
   )
 }
 
+// One nap or night: a one-line summary, tap to open the full timeline.
+function Entry({ kind, icon, label, right, summary, children, notes, onEdit }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div class={`entry ${kind}${open ? ' open' : ''}`}>
+      <button class="entry-head" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <div class="top">
+          {icon} {label}
+          <span class="right">{right}</span>
+          <Chevron class="chev" width="18" height="18" />
+        </div>
+        <p class="small muted entry-sum">{summary}</p>
+      </button>
+      {open && (
+        <div class="entry-body">
+          {children}
+          {notes && <p class="small muted" style="margin-top:6px">{notes}</p>}
+          <button class="btn ghost small entry-edit" onClick={onEdit}>
+            <Pencil width="16" height="16" /> Edit
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const span = (st) => `${fmtClock(st.start)} – ${st.open ? 'now' : fmtClock(st.end)}`
+
 function NapEntry({ s, st, n, onEdit }) {
   const wakes = wakesOf(s)
+  const summary = [
+    span(st),
+    st.latency != null && `asleep in ${fmtDur(st.latency)}`,
+    wakes.length > 0 && `stirred ${wakes.length}×`,
+    s.notes && 'note',
+  ].filter(Boolean).join(' · ')
   return (
-    <button class="entry nap" onClick={() => onEdit(s.id)}>
-      <div class="top">
-        <Sun width="18" height="18" /> Nap {n}
-        <span class="right">{st.noSleep ? 'No sleep' : st.open ? 'In progress' : fmtDur(st.sleep)}</span>
-      </div>
+    <Entry
+      kind="nap" icon={<Sun width="18" height="18" />} label={`Nap ${n}`}
+      right={st.noSleep ? 'No sleep' : st.open ? 'In progress' : fmtDur(st.sleep)}
+      summary={summary} notes={s.notes} onEdit={() => onEdit(s.id)}
+    >
       <ul class="timeline">
         <li>
           <b>{fmtClock(st.start)}</b> down <span class="by">· {nameOf(s.started_by)}</span>
@@ -85,33 +119,32 @@ function NapEntry({ s, st, n, onEdit }) {
           </li>
         )}
       </ul>
-      {s.notes && <p class="small muted" style="margin-top:6px">{s.notes}</p>}
-    </button>
+    </Entry>
   )
 }
 
 function NightEntry({ s, st, onEdit }) {
   const wakes = wakesOf(s)
   const n = nightNumber(s)
+  const summary = [
+    span(st),
+    `${st.wakeCount} wake${st.wakeCount === 1 ? '' : 's'}${st.fedCount ? ` (${st.fedCount} fed)` : ''}`,
+    st.longest > 0 && `longest ${fmtDur(st.longest)}`,
+    s.notes && 'note',
+  ].filter(Boolean).join(' · ')
   return (
-    <button class="entry night" onClick={() => onEdit(s.id)}>
-      <div class="top">
-        <Moon width="18" height="18" /> {n ? `Night ${n}` : 'Night'}
-        <span class="right">{st.open ? 'In progress' : fmtDur(st.sleep)}</span>
-      </div>
-      <p class="small muted" style="margin:4px 0 0 2px">
-        {st.wakeCount} wake{st.wakeCount === 1 ? '' : 's'}
-        {st.fedCount ? ` (${st.fedCount} fed)` : ''}
-        {st.latency != null && ` · fell asleep in ${fmtDur(st.latency)}`}
-        {st.longest > 0 && ` · longest stretch ${fmtDur(st.longest)}`}
-      </p>
+    <Entry
+      kind="night" icon={<Moon width="18" height="18" />} label={n ? `Night ${n}` : 'Night'}
+      right={st.open ? 'In progress' : fmtDur(st.sleep)}
+      summary={summary} notes={s.notes} onEdit={() => onEdit(s.id)}
+    >
       <ul class="timeline">
         <li>
           <b>{fmtClock(st.start)}</b> bedtime <span class="by">· {nameOf(s.started_by)}</span>
         </li>
         {st.asleep && (
           <li>
-            <b>{fmtClock(st.asleep)}</b> asleep <span class="by">· {nameOf(s.asleep_by)}</span>
+            <b>{fmtClock(st.asleep)}</b> asleep after {fmtDur(st.latency)} <span class="by">· {nameOf(s.asleep_by)}</span>
           </li>
         )}
         {wakes.map((w) => (
@@ -127,7 +160,6 @@ function NightEntry({ s, st, onEdit }) {
           </li>
         )}
       </ul>
-      {s.notes && <p class="small muted" style="margin-top:6px">{s.notes}</p>}
-    </button>
+    </Entry>
   )
 }

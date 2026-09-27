@@ -29,3 +29,4 @@ export const Plus = (p) => <I {...p}><path d="M12 5v14M5 12h14" /></I>
 export const Stop = (p) => <I {...p}><circle cx="12" cy="12" r="9.5" /><path d="M9 9h6v6H9z" /></I>
 export const Leaf = (p) => <I {...p}><path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15" /><path d="M5 19l7-7" /></I>
 export const Pencil = (p) => <I {...p}><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></I>
+export const Chevron = (p) => <I stroke-width="2.4" {...p}><path d="M6 9l6 6 6-6" /></I>

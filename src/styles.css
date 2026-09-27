@@ -197,8 +197,6 @@ main { flex: 1; padding: 6px 16px calc(96px + var(--safe-bottom)); max-width: 56
 .banner.warn svg { color: var(--warn); }
 .banner.calm { background: var(--calm-soft); }
 .banner.calm svg { color: var(--calm); }
-.banner.heart { background: var(--heart-soft); }
-.banner.heart svg { color: var(--heart); }
 .banner b { display: block; margin-bottom: 2px; }
 .banner .link { background: none; border: 0; padding: 0; margin-top: 6px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; font-size: 14px; }
 
@@ -245,6 +243,13 @@ main { flex: 1; padding: 6px 16px calc(96px + var(--safe-bottom)); max-width: 56
 .entry.nap .dot { background: var(--nap); }
 .entry.night .dot { background: var(--night); }
 .entry .top .right { margin-left: auto; font-family: var(--display); font-weight: 500; font-size: 18px; font-variant-numeric: tabular-nums; }
+.entry-head { all: unset; display: block; width: 100%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.entry-head:focus-visible { outline: 2px solid var(--night); outline-offset: 6px; border-radius: 8px; }
+.entry .chev { color: var(--ink-3); transition: transform .2s ease; flex: none; }
+.entry.open .chev { transform: rotate(180deg); }
+.entry-sum { margin: 4px 0 0 26px; }
+.entry-body { margin-left: 4px; }
+.entry-edit { margin-top: 6px; }
 .timeline { margin: 8px 0 0 4px; padding: 0 0 0 14px; border-left: 2px solid var(--line); list-style: none; font-size: 14px; }
 .timeline li { position: relative; padding: 3px 0; color: var(--ink-2); }
 .timeline li::before { content: ''; position: absolute; left: -19px; top: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--line); }

@@ -65,7 +65,7 @@ function Shell() {
       </header>
 
       <main>
-        {tab === 'now' && <NowView onHold={() => setHold(true)} onPlaybook={openPlaybook} onTab={goTab} onEdit={setEdit} />}
+        {tab === 'now' && <NowView onPlaybook={openPlaybook} onTab={goTab} onEdit={setEdit} />}
         {tab === 'history' && <HistoryView onEdit={setEdit} onAdd={() => setEdit('new')} />}
         {tab === 'trends' && <TrendsView />}
         {tab === 'guide' && <GuideView focus={focus} />}
