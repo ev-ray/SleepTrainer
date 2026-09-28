@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
-import { now, resetDemo, save, settings, signOut, user } from '../lib/store.js'
+import { cancelInvite, db, fetchInvites, invite, me, now, removeMember, renameMe, resetDemo, save, settings, signOut, toast, user } from '../lib/store.js'
 import { DEMO } from '../lib/supabase.js'
 import { ageInfo, wakeWindow } from '../lib/age.js'
 import { fmtMins } from '../lib/time.js'
@@ -77,6 +77,8 @@ export function GuideView({ focus }) {
 
       <div class="section-label">Settings</div>
       <SettingsForm />
+      <div class="section-label">Family</div>
+      <FamilyCard />
     </>
   )
 }
@@ -170,5 +172,99 @@ function SettingsForm() {
         )}
       </p>
     </form>
+  )
+}
+
+// Who can see and log for this baby, and inviting more people.
+function FamilyCard() {
+  const members = db.profiles.value
+  const mine = members.find((p) => p.id === me())
+  const owner = mine?.role === 'owner'
+  const [invites, setInvites] = useState([])
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [myName, setMyName] = useState(mine?.display_name || '')
+  const [err, setErr] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [confirm, setConfirm] = useState(null)
+  const load = () => fetchInvites().then(setInvites, (e) => setErr(e.message))
+  useEffect(() => void load(), [])
+
+  const send = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    setErr(null)
+    try {
+      await invite(email, name)
+      setEmail('')
+      setName('')
+      toast.value = { text: 'Invite saved' }
+      await load()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+  const act = (fn) => async () => {
+    setErr(null)
+    try {
+      await fn()
+      await load()
+    } catch (e) {
+      setErr(e.message)
+    }
+  }
+  const link = location.origin + location.pathname
+
+  return (
+    <section class="card">
+      <ul class="people">
+        {members.map((p) => (
+          <li key={p.id}>
+            <span>
+              <b>{p.display_name}</b>{p.id === me() && ' (you)'}
+              <span class="tiny" style="display:block">{p.email}{p.role === 'owner' && ' · owner'}</span>
+            </span>
+            {owner && p.id !== me() && !DEMO &&
+              (confirm === p.id ? (
+                <button class="btn danger small" onClick={act(() => removeMember(p.id))}>Remove</button>
+              ) : (
+                <button class="btn ghost small" onClick={() => setConfirm(p.id)}>Remove…</button>
+              ))}
+          </li>
+        ))}
+        {invites.map((i) => (
+          <li key={i.id}>
+            <span>
+              <b>{i.display_name || i.email}</b>
+              <span class="tiny" style="display:block">{i.email} · invited, hasn’t joined yet</span>
+            </span>
+            <button class="btn ghost small" onClick={act(() => cancelInvite(i.id))}>Cancel</button>
+          </li>
+        ))}
+      </ul>
+
+      <form onSubmit={send} style="margin-top:14px">
+        <h3 style="margin-bottom:8px">Invite someone</h3>
+        <label class="field"><span>Their email</span><input class="input" type="email" required value={email} onInput={(e) => setEmail(e.currentTarget.value)} /></label>
+        <label class="field"><span>Their name (optional)</span><input class="input" value={name} onInput={(e) => setName(e.currentTarget.value)} placeholder="e.g. Grandma" /></label>
+        <button class="btn secondary" style="width:100%" disabled={busy || DEMO}>{busy ? 'Saving…' : 'Invite'}</button>
+        <p class="tiny" style="margin-top:8px">
+          Then send them the app link (<b>{link}</b>). When they sign in with that email, they’ll join this log.
+        </p>
+      </form>
+
+      {mine && (
+        <form style="margin-top:14px" onSubmit={(e) => { e.preventDefault(); renameMe(myName); toast.value = { text: 'Name saved' } }}>
+          <label class="field">
+            <span>Your name</span>
+            <input class="input" value={myName} onInput={(e) => setMyName(e.currentTarget.value)} />
+          </label>
+          <button class="btn ghost small" disabled={!myName.trim() || myName === mine.display_name}>Save name</button>
+        </form>
+      )}
+      {err && <p class="small" style="color:#c0453c;margin-top:10px">{err}</p>}
+    </section>
   )
 }

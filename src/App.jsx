@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { loaded, notMember, settings, syncState, user } from './lib/store.js'
+import { loaded, needsFamily, settings, syncState, user } from './lib/store.js'
 import { ageInfo } from './lib/age.js'
 import { DEMO } from './lib/supabase.js'
 import { NowView } from './components/NowView.jsx'
@@ -7,7 +7,8 @@ import { HistoryView } from './components/HistoryView.jsx'
 import { TrendsView } from './components/TrendsView.jsx'
 import { GuideView } from './components/GuideView.jsx'
 import { HoldSteady } from './components/HoldSteady.jsx'
-import { SignIn, NotMember } from './components/SignIn.jsx'
+import { SignIn } from './components/SignIn.jsx'
+import { Onboarding } from './components/Onboarding.jsx'
 import { AdjustTimeSheet, EditSessionSheet } from './components/EditSheets.jsx'
 import { Toast } from './components/ui.jsx'
 import { Book, Chart, Heart, Home, List } from './components/icons.jsx'
@@ -22,8 +23,8 @@ const TABS = [
 export function App() {
   if (user.value === undefined) return null
   if (!user.value) return <SignIn />
-  if (notMember.value) return <NotMember />
   if (!loaded.value) return <div class="empty" style="padding-top:40vh">Loading…</div>
+  if (needsFamily.value) return <Onboarding />
   return <Shell />
 }
 
