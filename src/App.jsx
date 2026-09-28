@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { loaded, notMember, settings, syncState, user } from './lib/store.js'
+import { loaded, needsFamily, settings, syncState, user } from './lib/store.js'
 import { ageInfo } from './lib/age.js'
 import { DEMO } from './lib/supabase.js'
 import { NowView } from './components/NowView.jsx'
@@ -7,10 +7,12 @@ import { HistoryView } from './components/HistoryView.jsx'
 import { TrendsView } from './components/TrendsView.jsx'
 import { GuideView } from './components/GuideView.jsx'
 import { HoldSteady } from './components/HoldSteady.jsx'
-import { SignIn, NotMember } from './components/SignIn.jsx'
+import { SettingsView } from './components/SettingsView.jsx'
+import { SignIn } from './components/SignIn.jsx'
+import { Onboarding } from './components/Onboarding.jsx'
 import { AdjustTimeSheet, EditSessionSheet } from './components/EditSheets.jsx'
 import { Toast } from './components/ui.jsx'
-import { Book, Chart, Heart, Home, List } from './components/icons.jsx'
+import { Book, Chart, Gear, Heart, Home, List } from './components/icons.jsx'
 
 const TABS = [
   { id: 'now', label: 'Now', Icon: Home },
@@ -22,8 +24,8 @@ const TABS = [
 export function App() {
   if (user.value === undefined) return null
   if (!user.value) return <SignIn />
-  if (notMember.value) return <NotMember />
   if (!loaded.value) return <div class="empty" style="padding-top:40vh">Loading…</div>
+  if (needsFamily.value) return <Onboarding />
   return <Shell />
 }
 
@@ -33,6 +35,8 @@ function Shell() {
   const [edit, setEdit] = useState(null) // session id, or 'new'
   const [adjust, setAdjust] = useState(null)
   const [focus, setFocus] = useState(null)
+  const [showSettings, setShowSettings] = useState(false)
+  const openSettings = () => setShowSettings(true)
 
   const st = settings.value
   const age = ageInfo(st)
@@ -50,11 +54,11 @@ function Shell() {
       <header class="topbar">
         <div class="who">
           <h1>
-            {st?.baby_name || 'Sleep Log'}
+            <button class="name-btn" onClick={openSettings}>{st?.baby_name || 'Sleep Log'}</button>
             <span class={`sync-dot ${syncState.value}`} title={syncState.value === 'ok' ? 'Synced' : syncState.value === 'saving' ? 'Saving…' : 'Offline — will sync'} />
           </h1>
           <div class="age">
-            {age ? `Day ${age.days} · ${age.weeks} weeks${age.extraDays ? ` ${age.extraDays}d` : ''}` : 'Sleep training log'}
+            {age ? `${age.weeks} weeks${age.extraDays ? ` ${age.extraDays}d` : ''}` : 'Sleep training log'}
             {DEMO && ' · demo'}
             {syncState.value === 'offline' && ' · offline, will sync'}
           </div>
@@ -62,13 +66,16 @@ function Shell() {
         <button class="hold-btn" onClick={() => setHold(true)}>
           <Heart width="18" height="18" /> Hold steady
         </button>
+        <button class="icon-btn" onClick={openSettings} aria-label="Settings and family">
+          <Gear width="20" height="20" />
+        </button>
       </header>
 
       <main>
         {tab === 'now' && <NowView onPlaybook={openPlaybook} onTab={goTab} onEdit={setEdit} />}
         {tab === 'history' && <HistoryView onEdit={setEdit} onAdd={() => setEdit('new')} />}
         {tab === 'trends' && <TrendsView />}
-        {tab === 'guide' && <GuideView focus={focus} />}
+        {tab === 'guide' && <GuideView focus={focus} onSettings={openSettings} />}
       </main>
 
       <nav class="tabbar">
@@ -84,6 +91,7 @@ function Shell() {
       {edit && <EditSessionSheet id={edit === 'new' ? null : edit} onClose={() => setEdit(null)} />}
       {adjust && <AdjustTimeSheet target={adjust} onClose={() => setAdjust(null)} />}
       {hold && <HoldSteady onClose={() => setHold(false)} />}
+      {showSettings && <SettingsView onClose={() => setShowSettings(false)} />}
     </div>
   )
 }

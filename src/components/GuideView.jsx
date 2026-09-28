@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'preact/hooks'
-import { now, resetDemo, save, settings, signOut, user } from '../lib/store.js'
-import { DEMO } from '../lib/supabase.js'
+import { useEffect } from 'preact/hooks'
+import { now, settings } from '../lib/store.js'
 import { ageInfo, wakeWindow } from '../lib/age.js'
 import { fmtMins } from '../lib/time.js'
 import { GO_IN_IF, PLAN, PLAYBOOK, RESEARCH } from '../content/guide.js'
@@ -10,7 +9,7 @@ const clock = (hm) => {
   return new Date(2000, 0, 1, h, m).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
-export function GuideView({ focus }) {
+export function GuideView({ focus, onSettings }) {
   const st = settings.value
   const age = ageInfo(st, now.peek())
 
@@ -28,7 +27,8 @@ export function GuideView({ focus }) {
       {age ? <AgeCard age={age} name={st.baby_name} /> : (
         <section class="card">
           <h2>Add his birthday</h2>
-          <p class="muted">Enter it in Settings below and the whole app — wake windows, nap count, targets — will follow his age automatically.</p>
+          <p class="muted">Enter it in Settings and the whole app (wake windows, nap count, targets) will follow his age automatically.</p>
+          <button class="btn secondary" style="margin-top:12px" onClick={onSettings}>Open settings</button>
         </section>
       )}
 
@@ -74,9 +74,6 @@ export function GuideView({ focus }) {
           </div>
         ))}
       </section>
-
-      <div class="section-label">Settings</div>
-      <SettingsForm />
     </>
   )
 }
@@ -110,65 +107,5 @@ function AgeCard({ age, name }) {
         </p>
       )}
     </section>
-  )
-}
-
-function SettingsForm() {
-  const st = settings.value
-  const [f, setF] = useState(st || {})
-  const [saved, setSaved] = useState(false)
-  useEffect(() => setF(st || {}), [st?.updated_at])
-  if (!st) return null
-  const set = (k) => (e) => {
-    setSaved(false)
-    setF({ ...f, [k]: e.currentTarget.value === '' ? null : e.currentTarget.value })
-  }
-  const submit = (e) => {
-    e.preventDefault()
-    save('settings', {
-      ...f,
-      feed_interval_hours: f.feed_interval_hours == null ? null : Number(f.feed_interval_hours),
-      nap_limit_min: Number(f.nap_limit_min) || 60,
-      morning_time: f.morning_time || '06:00',
-      baby_name: f.baby_name || 'Baby',
-    })
-    setSaved(true)
-  }
-  return (
-    <form class="card" onSubmit={submit}>
-      <label class="field"><span>Baby’s name</span><input class="input" value={f.baby_name || ''} onInput={set('baby_name')} /></label>
-      <label class="field"><span>Birthday</span><input class="input" type="date" value={f.birth_date || ''} onInput={set('birth_date')} /></label>
-      <label class="field"><span>Due date (only if born 2+ weeks early)</span><input class="input" type="date" value={f.due_date || ''} onInput={set('due_date')} /></label>
-      <label class="field"><span>Night 1 of sleep training</span><input class="input" type="date" value={f.training_start || ''} onInput={set('training_start')} /></label>
-      <label class="field">
-        <span>Night-feed plan: feed if at least this many hours since last feed</span>
-        <select class="input" value={f.feed_interval_hours ?? ''} onChange={set('feed_interval_hours')}>
-          <option value="">No plan set</option>
-          {[2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8].map((h) => <option key={h} value={h}>{h} hours</option>)}
-          <option value="24">No night feeds</option>
-        </select>
-      </label>
-      <label class="field">
-        <span>Morning starts at</span>
-        <input class="input" type="time" value={(f.morning_time || '06:00').slice(0, 5)} onInput={set('morning_time')} />
-      </label>
-      <label class="field">
-        <span>Nap attempt limit (minutes)</span>
-        <input class="input" type="number" inputMode="numeric" min="20" max="120" value={f.nap_limit_min ?? 60} onInput={set('nap_limit_min')} />
-      </label>
-      <label class="field">
-        <span>Our “why” — shown on Hold steady</span>
-        <textarea class="input" value={f.why_note || ''} onInput={set('why_note')} placeholder="Write a note to yourselves for the hard moments." />
-      </label>
-      <button class="btn primary" style="width:100%;--accent:var(--night)" type="submit">{saved ? 'Saved ✓' : 'Save settings'}</button>
-      <p class="tiny" style="margin-top:14px">
-        Signed in as {user.value?.email}.{' '}
-        {DEMO ? (
-          <button type="button" class="btn ghost small" onClick={resetDemo}>Reset demo data</button>
-        ) : (
-          <button type="button" class="btn ghost small" onClick={signOut}>Sign out</button>
-        )}
-      </p>
-    </form>
   )
 }

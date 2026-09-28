@@ -97,7 +97,8 @@ p { margin: 0; }
 }
 .topbar .who { flex: 1; min-width: 0; }
 .topbar h1 { font-size: 22px; line-height: 1.1; }
-.topbar .age { color: var(--ink-2); font-size: 13px; }
+.topbar .name-btn { border: 0; background: none; padding: 0; font-weight: inherit; text-align: left; }
+.topbar .age {color: var(--ink-2); font-size: 13px; }
 .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--calm); display: inline-block; margin-left: 6px; vertical-align: middle; }
 .sync-dot.saving { background: var(--warn); }
 .sync-dot.offline { background: var(--ink-3); }
@@ -258,6 +259,12 @@ main { flex: 1; padding: 6px 16px calc(96px + var(--safe-bottom)); max-width: 56
 .timeline li b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .by { font-size: 12px; color: var(--ink-3); }
 
+/* ─── Family ────────────────────────────────────────────── */
+.people { list-style: none; margin: 0; padding: 0; }
+.people li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.people li:last-child { border-bottom: 0; }
+.people li > span { min-width: 0; overflow-wrap: anywhere; }
+
 /* ─── Trends ────────────────────────────────────────────── */
 .seg { display: inline-flex; background: var(--surface-2); border-radius: 12px; padding: 3px; }
 .seg button { border: 0; background: none; padding: 6px 14px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--ink-2); }
@@ -312,6 +319,9 @@ details.acc li + li { margin-top: 6px; }
   width: 100%; border: 0; border-radius: 12px; padding: 13px 14px; font-size: 16px;
   background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1.5px transparent; min-height: 48px;
 }
+/* iOS Safari gives date/time inputs an intrinsic min-width that overflows the card. */
+.input[type='date'], .input[type='time'] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; }
+.input::-webkit-date-and-time-value { text-align: left; }
 .input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--night); }
 textarea.input { min-height: 90px; resize: vertical; }
 /* iOS gives date inputs an intrinsic width that ignores width: 100%. */
@@ -401,3 +411,21 @@ input.input[type='datetime-local'], input.input[type='date'], input.input[type='
 @media (min-width: 700px) {
   .toast { bottom: calc(var(--safe-bottom) + 90px); }
 }
+
+/* ─── Settings page ─────────────────────────────────────── */
+.icon-btn {
+  display: grid; place-items: center; flex: none; width: 38px; height: 38px;
+  border: 0; border-radius: 50%; background: var(--surface-2); color: var(--ink-2);
+}
+.page-over {
+  position: fixed; inset: 0; z-index: 45; overflow-y: auto; background: var(--bg);
+  animation: rise 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.page-over-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: calc(var(--safe-top) + 12px) 18px 10px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.page-over-head h1 { font-size: 22px; line-height: 1.1; }
+.page-over-body { padding: 0 16px calc(var(--safe-bottom) + 32px); max-width: 560px; margin: 0 auto; }

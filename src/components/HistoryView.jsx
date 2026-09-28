@@ -47,10 +47,10 @@ function Day({ sum, today, onEdit }) {
           {night && !night.st.open && ` · ${fmtDur(sum.total)} total`}
         </span>
       </div>
+      {night && <NightEntry s={night.s} st={night.st} onEdit={onEdit} />}
       {sum.naps.map(({ s, st }, i) => (
         <NapEntry key={s.id} s={s} st={st} n={i + 1} onEdit={onEdit} />
-      ))}
-      {night && <NightEntry s={night.s} st={night.st} onEdit={onEdit} />}
+      )).reverse()}
     </section>
   )
 }

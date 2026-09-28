@@ -49,7 +49,7 @@ export function SignIn() {
         <h1>Sleep Log</h1>
         {step === 'email' ? (
           <form onSubmit={send}>
-            <p class="muted" style="margin-bottom:18px">Family only. We’ll email you a sign-in code — you’ll stay signed in after that.</p>
+            <p class="muted" style="margin-bottom:18px">We’ll email you a sign-in code. You’ll stay signed in after that.</p>
             <label class="field">
               <span>Email</span>
               <input class="input" type="email" autocomplete="email" required value={email} onInput={(e) => setEmail(e.currentTarget.value)} />
@@ -72,18 +72,6 @@ export function SignIn() {
           </form>
         )}
         {err && <p class="small" style="color:#c0453c;margin-top:12px">{err}</p>}
-      </div>
-    </div>
-  )
-}
-
-export function NotMember() {
-  return (
-    <div class="signin">
-      <div class="box">
-        <h1>Not on the list</h1>
-        <p class="muted">This account isn’t one of the family members allowed to see this log.</p>
-        <button class="btn secondary" style="width:100%;margin-top:18px" onClick={signOut}>Sign out</button>
       </div>
     </div>
   )
