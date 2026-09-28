@@ -32,7 +32,7 @@ export function GuideView({ focus }) {
         </section>
       )}
 
-      <div class="section-label">Our plan</div>
+      <div class="section-label">CIO extinction method</div>
       <section class="card">
         {PLAN.map((p, i) => (
           <div class="plan-step" key={p.title}>

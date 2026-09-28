@@ -36,7 +36,7 @@ export const CHECKLISTS = {
   ],
 }
 
-// ─── Our plan (extinction) ───────────────────────────────────────────────────
+// ─── CIO extinction method ───────────────────────────────────────────────────
 export const PLAN = [
   {
     title: 'Same routine, every sleep',
