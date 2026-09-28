@@ -10,6 +10,7 @@ import { HoldSteady } from './components/HoldSteady.jsx'
 import { SettingsView } from './components/SettingsView.jsx'
 import { SignIn } from './components/SignIn.jsx'
 import { Onboarding } from './components/Onboarding.jsx'
+import { Welcome, shouldWelcome } from './components/Welcome.jsx'
 import { AdjustTimeSheet, EditSessionSheet } from './components/EditSheets.jsx'
 import { Toast } from './components/ui.jsx'
 import { Book, Chart, Gear, Heart, Home, List } from './components/icons.jsx'
@@ -35,7 +36,8 @@ function Shell() {
   const [edit, setEdit] = useState(null) // session id, or 'new'
   const [adjust, setAdjust] = useState(null)
   const [focus, setFocus] = useState(null)
-  const [showSettings, setShowSettings] = useState(false)
+  const [showSettings, setShowSettings] = useState(false) // false, true, or a section to scroll to
+  const [welcome, setWelcome] = useState(shouldWelcome)
   const openSettings = () => setShowSettings(true)
 
   const st = settings.value
@@ -91,7 +93,8 @@ function Shell() {
       {edit && <EditSessionSheet id={edit === 'new' ? null : edit} onClose={() => setEdit(null)} />}
       {adjust && <AdjustTimeSheet target={adjust} onClose={() => setAdjust(null)} />}
       {hold && <HoldSteady onClose={() => setHold(false)} />}
-      {showSettings && <SettingsView onClose={() => setShowSettings(false)} />}
+      {welcome && <Welcome onClose={() => setWelcome(false)} onSettings={setShowSettings} />}
+      {showSettings && <SettingsView section={showSettings} onClose={() => setShowSettings(false)} />}
     </div>
   )
 }

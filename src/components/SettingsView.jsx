@@ -3,7 +3,10 @@ import { cancelInvite, db, fetchInvites, invite, me, removeMember, renameMe, res
 import { DEMO } from '../lib/supabase.js'
 
 // Full-screen settings page, opened from the gear or the baby's name in the top bar.
-export function SettingsView({ onClose }) {
+export function SettingsView({ section, onClose }) {
+  useEffect(() => {
+    if (typeof section === 'string') document.getElementById(`settings-${section}`)?.scrollIntoView()
+  }, [])
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose()
     addEventListener('keydown', onKey)
@@ -21,9 +24,9 @@ export function SettingsView({ onClose }) {
         <button class="btn secondary small" onClick={onClose}>Done</button>
       </header>
       <div class="page-over-body">
-        <div class="section-label">Baby</div>
+        <div class="section-label" id="settings-baby">Baby</div>
         <BabyForm />
-        <div class="section-label">Family</div>
+        <div class="section-label" id="settings-family">Family</div>
         <FamilyCard />
         <div class="section-label">Account</div>
         <section class="card spread">

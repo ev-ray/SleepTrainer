@@ -339,6 +339,13 @@ textarea.input { min-height: 90px; resize: vertical; }
 .sheet h2 { font-size: 24px; margin-bottom: 14px; }
 .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
 .quick .btn { min-height: 52px; font-size: 16px; }
+.setup-step {
+  display: grid; grid-template-columns: 28px 1fr 18px; gap: 12px; align-items: center; width: 100%; text-align: left;
+  border: 0; background: var(--surface); border-radius: 16px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.setup-step > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.setup-step .n { width: 28px; height: 28px; border-radius: 50%; background: var(--night-soft); color: var(--night-strong); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.setup-step .chev { color: var(--ink-3); transform: rotate(-90deg); }
 .wake-edit { background: var(--surface); border-radius: 16px; padding: 12px; margin-bottom: 10px; }
 .wake-edit .grid2 { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 8px; }
 @media (min-width: 520px) { .wake-edit .grid2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
@@ -416,6 +423,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 }
 .page-over {
   position: fixed; inset: 0; z-index: 45; overflow-y: auto; background: var(--bg);
+  overflow-x: hidden; overscroll-behavior: contain;
   animation: rise 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .page-over-head {
@@ -425,4 +433,5 @@ textarea.input { min-height: 90px; resize: vertical; }
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
 .page-over-head h1 { font-size: 22px; line-height: 1.1; }
+.page-over .section-label { scroll-margin-top: calc(var(--safe-top) + 70px); }
 .page-over-body { padding: 0 16px calc(var(--safe-bottom) + 32px); max-width: 560px; margin: 0 auto; }
