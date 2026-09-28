@@ -44,17 +44,22 @@ function Shell() {
     setFocus(id)
     setTab('guide')
   }
+  const openSettings = () => {
+    // Already there: the focus effect won't re-fire, so scroll directly.
+    if (tab === 'guide' && focus === 'settings') document.getElementById('settings')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    else openPlaybook('settings')
+  }
 
   return (
     <div class="shell">
       <header class="topbar">
         <div class="who">
           <h1>
-            {st?.baby_name || 'Sleep Log'}
+            <button class="name-btn" onClick={openSettings}>{st?.baby_name || 'Sleep Log'}</button>
             <span class={`sync-dot ${syncState.value}`} title={syncState.value === 'ok' ? 'Synced' : syncState.value === 'saving' ? 'Saving…' : 'Offline — will sync'} />
           </h1>
           <div class="age">
-            {age ? `Day ${age.days} · ${age.weeks} weeks${age.extraDays ? ` ${age.extraDays}d` : ''}` : 'Sleep training log'}
+            {age ? `${age.weeks} weeks${age.extraDays ? ` ${age.extraDays}d` : ''}` : 'Sleep training log'}
             {DEMO && ' · demo'}
             {syncState.value === 'offline' && ' · offline, will sync'}
           </div>

@@ -16,7 +16,7 @@ export function GuideView({ focus }) {
 
   useEffect(() => {
     if (!focus) return
-    const el = document.getElementById(`pb-${focus}`)
+    const el = document.getElementById(focus === 'settings' ? 'settings' : `pb-${focus}`)
     if (el) {
       el.open = true
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -75,7 +75,7 @@ export function GuideView({ focus }) {
         ))}
       </section>
 
-      <div class="section-label">Settings</div>
+      <div class="section-label" id="settings">Settings</div>
       <SettingsForm />
     </>
   )
