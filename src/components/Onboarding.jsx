@@ -35,7 +35,7 @@ export function Onboarding() {
         </p>
         {showCreate && (
           <p class="tiny" style="margin-top:6px">
-            Joining someone else’s log? Ask them to invite this email from Guide → Settings → Family, then reopen the app.
+            Joining someone else’s log? Ask them to invite this email from Settings → Family, then reopen the app.
           </p>
         )}
       </div>

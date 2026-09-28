@@ -7,11 +7,12 @@ import { HistoryView } from './components/HistoryView.jsx'
 import { TrendsView } from './components/TrendsView.jsx'
 import { GuideView } from './components/GuideView.jsx'
 import { HoldSteady } from './components/HoldSteady.jsx'
+import { SettingsView } from './components/SettingsView.jsx'
 import { SignIn } from './components/SignIn.jsx'
 import { Onboarding } from './components/Onboarding.jsx'
 import { AdjustTimeSheet, EditSessionSheet } from './components/EditSheets.jsx'
 import { Toast } from './components/ui.jsx'
-import { Book, Chart, Heart, Home, List } from './components/icons.jsx'
+import { Book, Chart, Gear, Heart, Home, List } from './components/icons.jsx'
 
 const TABS = [
   { id: 'now', label: 'Now', Icon: Home },
@@ -34,6 +35,8 @@ function Shell() {
   const [edit, setEdit] = useState(null) // session id, or 'new'
   const [adjust, setAdjust] = useState(null)
   const [focus, setFocus] = useState(null)
+  const [showSettings, setShowSettings] = useState(false)
+  const openSettings = () => setShowSettings(true)
 
   const st = settings.value
   const age = ageInfo(st)
@@ -44,11 +47,6 @@ function Shell() {
   const openPlaybook = (id) => {
     setFocus(id)
     setTab('guide')
-  }
-  const openSettings = () => {
-    // Already there: the focus effect won't re-fire, so scroll directly.
-    if (tab === 'guide' && focus === 'settings') document.getElementById('settings')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    else openPlaybook('settings')
   }
 
   return (
@@ -68,13 +66,16 @@ function Shell() {
         <button class="hold-btn" onClick={() => setHold(true)}>
           <Heart width="18" height="18" /> Hold steady
         </button>
+        <button class="icon-btn" onClick={openSettings} aria-label="Settings and family">
+          <Gear width="20" height="20" />
+        </button>
       </header>
 
       <main>
         {tab === 'now' && <NowView onPlaybook={openPlaybook} onTab={goTab} onEdit={setEdit} />}
         {tab === 'history' && <HistoryView onEdit={setEdit} onAdd={() => setEdit('new')} />}
         {tab === 'trends' && <TrendsView />}
-        {tab === 'guide' && <GuideView focus={focus} />}
+        {tab === 'guide' && <GuideView focus={focus} onSettings={openSettings} />}
       </main>
 
       <nav class="tabbar">
@@ -90,6 +91,7 @@ function Shell() {
       {edit && <EditSessionSheet id={edit === 'new' ? null : edit} onClose={() => setEdit(null)} />}
       {adjust && <AdjustTimeSheet target={adjust} onClose={() => setAdjust(null)} />}
       {hold && <HoldSteady onClose={() => setHold(false)} />}
+      {showSettings && <SettingsView onClose={() => setShowSettings(false)} />}
     </div>
   )
 }

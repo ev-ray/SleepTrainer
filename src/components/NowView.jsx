@@ -317,7 +317,7 @@ function NightAwake({ s, w, t, onPlaybook, onEdit }) {
   } else {
     feedNote = (
       <Banner icon={Bottle}>
-        Last fed {fmtDur(sinceFeed)} ago. Set a night-feed plan in Guide → Settings and this card will tell you whether it’s a feed.
+        Last fed {fmtDur(sinceFeed)} ago. Set a night-feed plan in Settings (the gear at the top) and this card will tell you whether it’s a feed.
       </Banner>
     )
   }
@@ -411,7 +411,7 @@ function Awake({ t, onPlaybook, onEdit }) {
         <div class="status">{last ? 'Ready when he is' : 'Welcome'}</div>
         <p class="sub" style="margin-top:8px">
           {!age
-            ? 'Add his birthday in Guide → Settings so the schedule can follow his age.'
+            ? 'Add his birthday in Settings (the gear at the top) so the schedule can follow his age.'
             : last
               ? `Last logged ${fmtClock(ms(last.ended_at))}. Start his next sleep when it’s time.`
               : 'Start by logging his next nap or bedtime.'}
