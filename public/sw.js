@@ -26,8 +26,11 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone()
-          caches.open(CACHE).then((c) => c.put('./', copy))
+          // Only a real app page may become the offline copy, not an error page.
+          if (res.ok) {
+            const copy = res.clone()
+            caches.open(CACHE).then((c) => c.put('./', copy))
+          }
           return res
         })
         .catch(() => caches.match('./')),
