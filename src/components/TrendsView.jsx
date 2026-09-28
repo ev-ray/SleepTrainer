@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { now, settings } from '../lib/store.js'
+import { minute, settings } from '../lib/store.js'
 import { days, daySummary } from '../lib/metrics.js'
 import { ageInfo } from '../lib/age.js'
 import { MIN, HOUR, addDays, dayKey, fmtDay, fmtDur, parseDay } from '../lib/time.js'
@@ -9,7 +9,7 @@ const RANGES = [7, 14, 30]
 
 export function TrendsView() {
   const [range, setRange] = useState(14)
-  const t = now.peek()
+  const t = minute.value
   const today = dayKey(t)
   const keys = Array.from({ length: range }, (_, i) => addDays(today, i - range + 1))
   const rows = keys.map((k) => {

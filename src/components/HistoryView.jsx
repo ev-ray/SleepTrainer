@@ -1,12 +1,12 @@
 import { useState } from 'preact/hooks'
-import { nameOf, now } from '../lib/store.js'
+import { nameOf, minute } from '../lib/store.js'
 import { days, daySummary, nightNumber, stats, wakesOf } from '../lib/metrics.js'
 import { dayKey, fmtClock, fmtDay, fmtDur, ms } from '../lib/time.js'
 import { Chevron, Moon, Pencil, Plus, Sun } from './icons.jsx'
 
 export function HistoryView({ onEdit, onAdd }) {
   const [limit, setLimit] = useState(10)
-  const t = now.peek()
+  const t = minute.value
   const keys = [...days.value.keys()].sort().reverse()
   const today = dayKey(t)
 
@@ -47,7 +47,7 @@ function Day({ sum, today, onEdit }) {
           {night && !night.st.open && ` · ${fmtDur(sum.total)} total`}
         </span>
       </div>
-      {night && <NightEntry s={night.s} st={night.st} onEdit={onEdit} />}
+      {sum.nights.map(({ s, st }) => <NightEntry key={s.id} s={s} st={st} onEdit={onEdit} />).reverse()}
       {sum.naps.map(({ s, st }, i) => (
         <NapEntry key={s.id} s={s} st={st} n={i + 1} onEdit={onEdit} />
       )).reverse()}
@@ -134,8 +134,8 @@ function NightEntry({ s, st, onEdit }) {
   ].filter(Boolean).join(' · ')
   return (
     <Entry
-      kind="night" icon={<Moon width="18" height="18" />} label={n ? `Night ${n}` : 'Night'}
-      right={st.open ? 'In progress' : fmtDur(st.sleep)}
+      kind="night" icon={<Moon width="18" height="18" />} label={st.noSleep ? 'Bedtime attempt' : n ? `Night ${n}` : 'Night'}
+      right={st.open ? 'In progress' : st.noSleep ? 'No sleep' : fmtDur(st.sleep)}
       summary={summary} notes={s.notes} onEdit={() => onEdit(s.id)}
     >
       <ul class="timeline">
@@ -156,7 +156,7 @@ function NightEntry({ s, st, onEdit }) {
         ))}
         {s.ended_at && (
           <li>
-            <b>{fmtClock(st.end)}</b> up for the day <span class="by">· {nameOf(s.ended_by)}</span>
+            <b>{fmtClock(st.end)}</b> {st.noSleep ? 'attempt ended' : 'up for the day'} <span class="by">· {nameOf(s.ended_by)}</span>
           </li>
         )}
       </ul>

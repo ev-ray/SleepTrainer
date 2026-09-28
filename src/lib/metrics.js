@@ -29,8 +29,12 @@ export const openWake = computed(() => {
   return wakesOf(s).find((w) => !w.asleep_at) || null
 })
 
+// A bedtime attempt ended before he ever fell asleep isn't a night: he's
+// still awake from the last real sleep.
+export const isRealNight = (s) => s.kind === 'night' && (!!s.asleep_at || !s.ended_at)
+
 export const lastEnded = computed(() => {
-  const ended = sortedSessions.value.filter((s) => s.ended_at)
+  const ended = sortedSessions.value.filter((s) => s.ended_at && (s.kind === 'nap' || s.asleep_at))
   return ended.sort((a, b) => ms(a.ended_at) - ms(b.ended_at)).at(-1) || null
 })
 
@@ -78,12 +82,16 @@ export const days = computed(() => {
 
 export function daySummary(d, nowMs = Date.now()) {
   const naps = d.naps.map((s) => ({ s, st: stats(s, wakesOf(s), nowMs) }))
-  const night = d.nights[0] ? { s: d.nights[0], st: stats(d.nights[0], wakesOf(d.nights[0]), nowMs) } : null
+  const nights = d.nights.map((s) => ({ s, st: stats(s, wakesOf(s), nowMs) }))
+  // The day's night is the one he slept (a bedtime attempt that was called
+  // off earlier the same evening is listed, but doesn't count).
+  const night = nights.filter((n) => isRealNight(n.s)).at(-1) || null
   const napSleep = naps.reduce((a, n) => a + n.st.sleep, 0)
   const napLatencies = naps.filter((n) => n.st.latency != null).map((n) => n.st.latency)
   return {
     key: d.key,
     naps,
+    nights,
     night,
     napSleep,
     napCount: naps.filter((n) => n.st.asleep).length,
@@ -95,7 +103,7 @@ export function daySummary(d, nowMs = Date.now()) {
 // Night number since training began (1 = first night).
 export const nightsInTraining = computed(() => {
   const start = settings.value?.training_start
-  return sortedSessions.value.filter((s) => s.kind === 'night' && (!start || dayKey(s.started_at) >= start))
+  return sortedSessions.value.filter((s) => isRealNight(s) && (!start || dayKey(s.started_at) >= start))
 })
 
 export function nightNumber(s) {

@@ -148,7 +148,7 @@ function Settling({ s, t, onPlaybook, onEdit }) {
         </div>
       </Hero>
       {overLimit && (
-        <Banner tone="warn" title="It’s been over an hour" link="What to do" onLink={() => onPlaybook('noSleep')}>
+        <Banner tone="warn" title={`It’s been over ${fmtMins(limit / MIN)}`} link="What to do" onLink={() => onPlaybook('noSleep')}>
           Time to end this attempt. Get him up calmly — the next window will be shortened.
         </Banner>
       )}
@@ -304,7 +304,13 @@ function NightAwake({ s, w, t, onPlaybook, onEdit }) {
   let feedNote
   if (w.fed) feedNote = <Banner tone="calm" icon={Bottle} title="Feeding">Keep it dark and boring. Burp, then back down awake.</Banner>
   else if (callIt) feedNote = null
-  else if (interval) {
+  else if (interval >= 24) {
+    feedNote = (
+      <Banner icon={Moon} title="Not a feed, stay out" link="Night-wake plan" onLink={() => onPlaybook('nightWake')}>
+        Your plan is no night feeds.
+      </Banner>
+    )
+  } else if (interval) {
     feedNote = feedDue ? (
       <Banner tone="calm" icon={Bottle} title="This can be a feed">
         Last fed {fmtDur(sinceFeed)} before this wake. Your plan is every {interval}h or more.
@@ -327,7 +333,7 @@ function NightAwake({ s, w, t, onPlaybook, onEdit }) {
   const askFed = !w.fed && !callIt && feedDue !== false
   const upBtn = (
     <button class={`btn ${callIt ? 'primary' : 'secondary'}`} onClick={() => endSession(s)}>
-      <Sun /> Up for {callIt ? 'the day' : 'day'}
+      <Sun /> Up for the day
     </button>
   )
   const feedBtn = (
@@ -552,7 +558,7 @@ function TodaySummary({ t, onTab }) {
   const today = dayKey(t)
   const map = days.value
   // "Last night" = the most recent finished night.
-  const lastNight = [...sortedSessions.value].reverse().find((x) => x.kind === 'night' && x.ended_at)
+  const lastNight = [...sortedSessions.value].reverse().find((x) => x.kind === 'night' && x.asleep_at && x.ended_at)
   const ln = lastNight ? stats(lastNight, wakesOf(lastNight), t) : null
   const todayDay = map.get(today)
   const sum = todayDay ? daySummary(todayDay, t) : null
@@ -583,7 +589,7 @@ function TodaySummary({ t, onTab }) {
         <button class="card entry" style="width:100%;text-align:left;border:0;display:block" onClick={() => onTab('history')}>
           <div class="spread">
             <h3 style="margin:0">Today’s naps</h3>
-            <span class="tiny">{fmtDur(sum.napSleep)} total</span>
+            <span class="tiny">{fmtDur(naps.reduce((a, n) => a + n.st.sleep, 0))} total</span>
           </div>
           <div class="chips">
             {naps.map(({ s, st }) => (

@@ -5,16 +5,28 @@ import { HOUR, MIN, fmtClock, fromInput, iso, ms, toInput, uuid } from '../lib/t
 import { Sheet } from './ui.jsx'
 import { Plus } from './icons.jsx'
 
-// The other timestamps on a row that a given one must stay between.
+// The other timestamps a given one must stay between: the row's own steps,
+// and the wakes around it.
+const latest = (...ts) => ts.filter((t) => t != null).reduce((a, b) => Math.max(a, b), -Infinity)
+const earliest = (...ts) => ts.filter((t) => t != null).reduce((a, b) => Math.min(a, b), Infinity)
+const orNull = (t) => (Number.isFinite(t) ? t : null)
+
 function bounds(table, row, field) {
   if (table === 'sessions') {
+    const wakes = wakesOf(row)
+    const first = wakes[0]
+    const last = wakes.at(-1)
     if (field === 'started_at') return [null, ms(row.asleep_at || row.ended_at)]
-    if (field === 'asleep_at') return [ms(row.started_at), ms(row.ended_at)]
-    if (field === 'ended_at') return [ms(row.asleep_at || row.started_at), null]
+    if (field === 'asleep_at') return [ms(row.started_at), orNull(earliest(ms(first?.woke_at), ms(row.ended_at)))]
+    if (field === 'ended_at') return [orNull(latest(ms(row.asleep_at || row.started_at), ms(last?.woke_at), ms(last?.asleep_at))), null]
   }
   if (table === 'night_wakes') {
-    if (field === 'woke_at') return [ms(get('sessions', row.session_id)?.asleep_at), ms(row.asleep_at)]
-    if (field === 'asleep_at') return [ms(row.woke_at), null]
+    const s = get('sessions', row.session_id)
+    const wakes = s ? wakesOf(s).filter((w) => w.id !== row.id) : []
+    const prev = wakes.filter((w) => ms(w.woke_at) < ms(row.woke_at)).at(-1)
+    const next = wakes.find((w) => ms(w.woke_at) > ms(row.woke_at))
+    if (field === 'woke_at') return [orNull(latest(ms(s?.asleep_at), ms(prev?.asleep_at))), ms(row.asleep_at)]
+    if (field === 'asleep_at') return [ms(row.woke_at), orNull(earliest(ms(next?.woke_at), ms(s?.ended_at)))]
   }
   return [null, null]
 }
@@ -90,8 +102,14 @@ export function EditSessionSheet({ id, onClose }) {
     else if (prevEnd && ms(w.woke_at) < prevEnd) problems.push(`Wake ${i + 1} starts before he was asleep.`)
     if (w.asleep_at && ms(w.asleep_at) < ms(w.woke_at)) problems.push(`Wake ${i + 1}: back asleep before it woke.`)
     if (s.ended_at && ms(w.woke_at) > ms(s.ended_at)) problems.push(`Wake ${i + 1} is after the end.`)
+    else if (s.ended_at && ms(w.asleep_at) > ms(s.ended_at)) problems.push(`Wake ${i + 1} runs past the end.`)
     prevEnd = ms(w.asleep_at) || ms(w.woke_at)
   })
+  const times = [s.started_at, s.asleep_at, s.ended_at, ...wakes.flatMap((w) => [w.woke_at, w.asleep_at])]
+  if (times.some((t) => ms(t) > Date.now() + MIN)) problems.push('One of the times is in the future.')
+  const otherOpen = db.sessions.value.some((x) => !x.ended_at && x.id !== s.id)
+  if (!s.ended_at && otherOpen) problems.push('Another sleep is still in progress. Give this one an end time.')
+  const dropping = !s.asleep_at && wakes.length > 0
 
   const changes = (before, after) =>
     Object.fromEntries(Object.entries(after).filter(([k, v]) => !before || before[k] !== v))
@@ -182,9 +200,12 @@ export function EditSessionSheet({ id, onClose }) {
           <button
             class="btn secondary small"
             onClick={() => {
-              const nap = s.kind === 'nap'
-              const base = ms(wakes.at(-1)?.asleep_at || s.asleep_at || s.started_at) + (nap ? 40 * MIN : HOUR)
-              setWakes([...wakes, { id: uuid(), session_id: s.id, woke_at: iso(base), asleep_at: iso(base + (nap ? 10 : 15) * MIN), fed: false, logged_by: me(), notes: null }])
+              // Halfway through the stretch after the last wake (or since he fell asleep).
+              const from = ms(wakes.at(-1)?.asleep_at || wakes.at(-1)?.woke_at || s.asleep_at)
+              const to = ms(s.ended_at) ?? Date.now()
+              const woke = from + Math.max(0, to - from) / 2
+              const back = Math.min(woke + (s.kind === 'nap' ? 10 : 15) * MIN, woke + Math.max(0, to - woke) / 2)
+              setWakes([...wakes, { id: uuid(), session_id: s.id, woke_at: iso(woke), asleep_at: iso(back), fed: false, logged_by: me(), notes: null }])
             }}
           >
             <Plus /> Add wake
@@ -208,6 +229,7 @@ export function EditSessionSheet({ id, onClose }) {
         <textarea class="input" value={s.notes || ''} placeholder="Teething, vaccine day, nap in the car…" onInput={(e) => set({ notes: e.currentTarget.value || null })} />
       </label>
 
+      {dropping && <p class="small muted" style="margin-bottom:10px">With no “fell asleep” time, its {wakes.length} wake{wakes.length === 1 ? '' : 's'} will be removed on save.</p>}
       {problems.length > 0 && <p class="small" style="color:#c0453c;margin-bottom:10px">{problems.join(' ')}</p>}
 
       <div class="actions" style="margin-top:6px">

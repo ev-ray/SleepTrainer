@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks'
-import { now, settings } from '../lib/store.js'
+import { minute, settings } from '../lib/store.js'
 import { ageInfo, wakeWindow } from '../lib/age.js'
 import { fmtMins } from '../lib/time.js'
 import { GO_IN_IF, PLAN, PLAYBOOK, RESEARCH } from '../content/guide.js'
@@ -11,7 +11,7 @@ const clock = (hm) => {
 
 export function GuideView({ focus, onSettings }) {
   const st = settings.value
-  const age = ageInfo(st, now.peek())
+  const age = ageInfo(st, minute.value)
 
   useEffect(() => {
     if (!focus) return

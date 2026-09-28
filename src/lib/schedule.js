@@ -35,6 +35,7 @@ export function personalFit({ sessions, band, nowMs, dayStart }) {
   let index = 0
   for (const s of sessions) {
     if (s.kind === 'night') {
+      if (!s.asleep_at) continue // a called-off bedtime: still awake since upAt
       upAt = ms(s.ended_at)
       index = 0
       continue
@@ -61,7 +62,7 @@ export function nextUp({ sessions, last, band, nowMs }) {
   const awakeSince = ms(last.ended_at)
 
   // Naps so far today = naps since he got up for the day.
-  const lastNight = [...sessions].reverse().find((s) => s.kind === 'night' && s.ended_at)
+  const lastNight = [...sessions].reverse().find((s) => s.kind === 'night' && s.asleep_at && s.ended_at)
   const recentMorning = lastNight && nowMs - ms(lastNight.ended_at) < 18 * HOUR
   const dayStart = recentMorning ? ms(lastNight.ended_at) : startOfToday(nowMs)
   const napsToday = sessions.filter((s) => s.kind === 'nap' && ms(s.started_at) >= dayStart)
@@ -113,7 +114,8 @@ export function nextUp({ sessions, last, band, nowMs }) {
   let target = awakeSince + ww * MIN
   // Never later than the latest age-appropriate bedtime — an early bedtime is
   // the fix for a rough day.
-  if (kind === 'night') target = Math.min(target, bedLatest)
+  // (But never before he's had a few minutes up, if a nap ran that late.)
+  if (kind === 'night') target = Math.max(awakeSince + WIND_DOWN_MIN * MIN, Math.min(target, bedLatest))
 
   return {
     kind,
@@ -170,7 +172,7 @@ export function morningWakeAdvice({ s, wake, band, sessions, morningTime, nowMs 
   const sleptLine = `He’s slept ${fmtDur(st.sleep)} since ${fmtClock(asleep)}${st.awake >= 5 * MIN ? `, not counting ${fmtDur(st.awake)} awake overnight` : ''}.`
   const dayLine = !naps.length
     ? ''
-    : ` Yesterday’s naps added up to ${fmtDur(daySleep)}${shift <= -10 ? ', on the high side, so he needs a little less at night' : shift >= 10 ? ', on the light side, so he could use a little more tonight' : ''}.`
+    : ` Yesterday’s naps added up to ${fmtDur(daySleep)}${shift <= -10 ? ', on the high side, so he needs a little less at night' : shift >= 10 ? ', on the light side, so he could use a little more overnight' : ''}.`
   const needLine = ` He needs about ${fmtDur(need)} overnight.`
 
   let verdict, title, body

@@ -335,6 +335,7 @@ textarea.input { min-height: 90px; resize: vertical; }
   background: var(--bg); border-radius: 26px 26px 0 0; padding: 10px 18px calc(var(--safe-bottom) + 18px);
   animation: rise 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); max-width: 600px; margin: 0 auto;
 }
+.sheet:focus { outline: none; }
 .sheet .grab { width: 40px; height: 5px; border-radius: 9px; background: var(--line); margin: 0 auto 12px; }
 .sheet h2 { font-size: 24px; margin-bottom: 14px; }
 .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }

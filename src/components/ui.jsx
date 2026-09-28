@@ -1,20 +1,25 @@
-import { useEffect } from 'preact/hooks'
+import { useEffect, useRef } from 'preact/hooks'
 import { toast } from '../lib/store.js'
 
 export function Sheet({ onClose, children, label }) {
+  const ref = useRef(null)
   useEffect(() => {
+    // Move focus into the sheet so keyboard and screen-reader users land in it.
+    const prev = document.activeElement
+    ref.current?.focus({ preventScroll: true })
     const onKey = (e) => e.key === 'Escape' && onClose()
     addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => {
       removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
+      prev?.focus?.({ preventScroll: true })
     }
   }, [])
   return (
     <>
       <div class="scrim" onClick={onClose} />
-      <div class="sheet" role="dialog" aria-modal="true" aria-label={label}>
+      <div class="sheet" role="dialog" aria-modal="true" aria-label={label} tabIndex={-1} ref={ref}>
         <div class="grab" />
         {children}
       </div>

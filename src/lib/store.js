@@ -23,6 +23,8 @@ export const syncState = signal('ok') // ok | saving | offline
 export const toast = signal(null)
 export const now = signal(Date.now())
 setInterval(() => (now.value = Date.now()), 1000)
+// Ticks once a minute, for screens that don't need a live seconds counter.
+export const minute = computed(() => Math.floor(now.value / 60000) * 60000)
 
 export const settings = computed(() => db.settings.value[0] || null)
 export const me = () => user.peek()?.id

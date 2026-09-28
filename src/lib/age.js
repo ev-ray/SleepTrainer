@@ -66,7 +66,7 @@ export function ageInfo(settings, t = Date.now()) {
   const birth = parseDay(settings.birth_date)
   const today = new Date(t)
   today.setHours(0, 0, 0, 0)
-  const days = Math.round((today - birth) / DAY)
+  const days = Math.max(0, Math.round((today - birth) / DAY))
 
   // Preemies: go by adjusted age (from due date) for sleep expectations.
   let early = 0
@@ -74,12 +74,17 @@ export function ageInfo(settings, t = Date.now()) {
     const diff = Math.round((parseDay(settings.due_date) - birth) / DAY)
     if (diff >= 14) early = diff
   }
-  const adjDays = days - early
+  // Before the due date a preemie's adjusted age is still 0 (newborn targets).
+  const adjDays = Math.max(0, days - early)
   const weeksF = adjDays / 7
   const idx = BENCHMARKS.findIndex((b) => weeksF < b.upToWeeks)
   const band = BENCHMARKS[idx]
   const next = BENCHMARKS[idx + 1] || null
-  const nextDate = next ? new Date(birth.getTime() + (band.upToWeeks * 7 + early) * DAY) : null
+  let nextDate = null
+  if (next) {
+    nextDate = new Date(birth)
+    nextDate.setDate(nextDate.getDate() + band.upToWeeks * 7 + early) // calendar days, so DST can't shift it
+  }
 
   return {
     days,
