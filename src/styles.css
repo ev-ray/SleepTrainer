@@ -259,6 +259,12 @@ main { flex: 1; padding: 6px 16px calc(96px + var(--safe-bottom)); max-width: 56
 .timeline li b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .by { font-size: 12px; color: var(--ink-3); }
 
+/* ─── Family ────────────────────────────────────────────── */
+.people { list-style: none; margin: 0; padding: 0; }
+.people li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.people li:last-child { border-bottom: 0; }
+.people li > span { min-width: 0; overflow-wrap: anywhere; }
+
 /* ─── Trends ────────────────────────────────────────────── */
 .seg { display: inline-flex; background: var(--surface-2); border-radius: 12px; padding: 3px; }
 .seg button { border: 0; background: none; padding: 6px 14px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--ink-2); }

@@ -84,13 +84,13 @@ export function makeDemoData() {
     night_wakes: wakes,
     checks: [],
     profiles: [
-      { id: 'demo-evan', display_name: 'Evan' },
-      { id: 'demo-mom', display_name: 'Mom' },
-      { id: 'demo-grandma', display_name: 'Grandma' },
+      { id: 'demo-evan', display_name: 'Evan', email: 'demo@example.com', family_id: 'demo', role: 'owner' },
+      { id: 'demo-mom', display_name: 'Mom', email: 'mom@example.com', family_id: 'demo', role: 'member' },
+      { id: 'demo-grandma', display_name: 'Grandma', email: 'grandma@example.com', family_id: 'demo', role: 'member' },
     ],
     settings: [
       {
-        id: 1,
+        id: 'demo',
         baby_name: 'Baby',
         birth_date: localDateStr(new Date(today0 - 108 * DAY)),
         due_date: null,

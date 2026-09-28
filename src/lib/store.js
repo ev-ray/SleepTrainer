@@ -18,7 +18,7 @@ export const TABLES = ['sessions', 'night_wakes', 'checks', 'settings', 'profile
 export const db = Object.fromEntries(TABLES.map((t) => [t, signal([])]))
 export const user = signal(undefined) // undefined = loading, null = signed out
 export const loaded = signal(false)
-export const notMember = signal(false)
+export const needsFamily = signal(false) // signed in, but not part of a family yet
 export const syncState = signal('ok') // ok | saving | offline
 export const toast = signal(null)
 export const now = signal(Date.now())
@@ -182,7 +182,7 @@ export async function refresh() {
     batch(() => {
       TABLES.forEach((t, i) => (db[t].value = res[i].data))
       applyOutbox()
-      notMember.value = res[3].data.length === 0
+      needsFamily.value = !res[4].data.find((p) => p.id === me())?.family_id
       loaded.value = true
     })
     persistCache()
@@ -226,6 +226,7 @@ function stop() {
   channel = null
   restore(null)
   loaded.value = false
+  needsFamily.value = false
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -270,12 +271,7 @@ export async function sendCode(email) {
     email,
     options: { shouldCreateUser: true, emailRedirectTo: location.origin + location.pathname },
   })
-  if (error) {
-    if (/database error|not on the family list/i.test(error.message)) {
-      throw new Error('That email isn’t on the family list.')
-    }
-    throw error
-  }
+  if (error) throw error
 }
 
 export async function verifyCode(email, token) {
@@ -291,6 +287,66 @@ export async function signOut() {
   }
   await supabase.auth.signOut()
   localStorage.removeItem(CACHE_KEY)
+}
+
+// ─── Family ──────────────────────────────────────────────────────────────────
+// Joining and managing a family goes straight to the server (no outbox):
+// these are one-off, need a connection, and the database checks who may do what.
+
+const rpc = async (fn, args) => {
+  const { data, error } = await supabase.rpc(fn, args)
+  if (error) throw error
+  return data
+}
+
+export async function createFamily({ babyName, yourName, birthDate, dueDate }) {
+  await rpc('create_family', { baby_name: babyName, your_name: yourName, birth_date: birthDate || null, due_date: dueDate || null })
+  await refresh()
+}
+
+export async function acceptInvite(id, yourName) {
+  await rpc('accept_invite', { invite: id, your_name: yourName })
+  await refresh()
+}
+
+// Pending invites: your family's outgoing ones, or (before you've joined a
+// family) any addressed to you.
+export async function fetchInvites() {
+  if (DEMO) return []
+  const { data, error } = await supabase.from('invites').select('*').order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function invite(email, displayName) {
+  const mine = db.profiles.peek().find((p) => p.id === me())
+  const { error } = await supabase.from('invites').insert({
+    email: email.trim().toLowerCase(),
+    display_name: displayName?.trim() || null,
+    from_name: mine?.display_name || null,
+    baby_name: settings.peek()?.baby_name || null,
+  })
+  if (error) throw error.code === '23505' ? new Error('That email already has an invite.') : error
+}
+
+export async function cancelInvite(id) {
+  const { error } = await supabase.from('invites').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function removeMember(id) {
+  await rpc('remove_member', { member: id })
+  db.profiles.value = db.profiles.peek().filter((p) => p.id !== id)
+}
+
+export function renameMe(name) {
+  const mine = db.profiles.peek().find((p) => p.id === me())
+  if (!mine || !name.trim()) return
+  upsertLocal('profiles', { ...mine, display_name: name.trim() })
+  if (DEMO) return
+  supabase.from('profiles').update({ display_name: name.trim() }).eq('id', mine.id).then(({ error }) => {
+    if (error) toast.value = { text: `Couldn’t save your name (${error.message}).`, tone: 'error' }
+  })
 }
 
 export function resetDemo() {
