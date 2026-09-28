@@ -147,6 +147,9 @@ create policy "family or invitee deletes" on public.invites for delete to authen
 revoke all on public.families, public.profiles, public.invites, public.settings, public.sessions, public.night_wakes, public.checks from anon;
 grant select on public.families, public.profiles to authenticated;
 -- Only your display name is yours to change; family and role go through the functions below.
+-- Supabase grants every new table to authenticated by default, and a column
+-- grant doesn't narrow that, so take the table-wide right away first.
+revoke update on public.profiles from authenticated;
 grant update (display_name) on public.profiles to authenticated;
 grant select, insert, delete on public.invites to authenticated;
 grant select, insert, update on public.settings to authenticated;

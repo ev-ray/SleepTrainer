@@ -11,7 +11,7 @@
 import { signal, computed, batch } from '@preact/signals'
 import { supabase, DEMO } from './supabase.js'
 import { makeDemoData } from './demo.js'
-import { DAY, ms } from './time.js'
+import { DAY } from './time.js'
 
 export const TABLES = ['sessions', 'night_wakes', 'checks', 'settings', 'profiles']
 
@@ -35,7 +35,9 @@ export const nameOf = (id) => {
 
 // ─── Local persistence ───────────────────────────────────────────────────────
 const OUTBOX_KEY = 'sleeplog.outbox'
-const CACHE_KEY = 'sleeplog.cache'
+// Per account, so one person's log never shows up for the next person to sign in.
+const cacheKey = () => `sleeplog.cache.${me()}`
+const OLD_CACHE_KEY = 'sleeplog.cache'
 const DEMO_KEY = 'sleeplog.demo'
 
 function readJSON(key, fallback) {
@@ -58,7 +60,7 @@ function snapshot() {
   return Object.fromEntries(TABLES.map((t) => [t, db[t].peek()]))
 }
 function persistCache() {
-  writeJSON(DEMO ? DEMO_KEY : CACHE_KEY, snapshot())
+  writeJSON(DEMO ? DEMO_KEY : cacheKey(), snapshot())
 }
 function restore(data) {
   batch(() => TABLES.forEach((t) => (db[t].value = data?.[t] || [])))
@@ -80,8 +82,13 @@ export function get(table, id) {
   return db[table].peek().find((r) => r.id === id) || null
 }
 
+// Rows are stamped with the family they were logged for, so a change that is
+// still queued when someone signs out can never land in another family's log.
+const FAMILY_TABLES = ['sessions', 'night_wakes', 'checks']
+
 export function save(table, row) {
-  const merged = upsertLocal(table, { ...row, updated_at: new Date().toISOString() })
+  const family = FAMILY_TABLES.includes(table) && !row.family_id ? { family_id: settings.peek()?.id } : null
+  const merged = upsertLocal(table, { ...row, ...family, updated_at: new Date().toISOString() })
   enqueue({ op: 'upsert', table, id: merged.id, row: merged })
   return merged
 }
@@ -90,7 +97,10 @@ export function remove(table, id) {
   deleteLocal(table, id)
   if (table === 'sessions') {
     // cascade locally; the database cascades on its side
-    db.night_wakes.value = db.night_wakes.peek().filter((w) => w.session_id !== id)
+    const gone = new Set(db.night_wakes.peek().filter((w) => w.session_id === id).map((w) => w.id))
+    db.night_wakes.value = db.night_wakes.peek().filter((w) => !gone.has(w.id))
+    // Unsent changes to its wakes would only fail once the session is gone.
+    outbox = outbox.filter((o) => !(o.table === 'night_wakes' && gone.has(o.id)))
   }
   enqueue({ op: 'delete', table, id })
 }
@@ -102,9 +112,12 @@ export function restoreRow(table, before, id) {
 }
 
 function enqueue(item) {
-  // Only the latest state of a row matters.
-  outbox = outbox.filter((o) => !(o.table === item.table && o.id === item.id))
-  outbox.push(item)
+  // Only the latest state of a row matters. It keeps its place in the queue,
+  // so a session is always sent before the wakes logged during it.
+  item = { ...item, uid: me() }
+  const i = outbox.findIndex((o) => o.table === item.table && o.id === item.id)
+  if (i === -1) outbox.push(item)
+  else outbox = outbox.map((o, j) => (j === i ? item : o))
   persistOutbox()
   persistCache()
   flush()
@@ -166,17 +179,19 @@ function applyOutbox() {
 }
 
 export async function refresh() {
-  if (DEMO || !user.peek()) return
+  const uid = user.peek()?.id
+  if (DEMO || !uid) return
   const since = new Date(Date.now() - 120 * DAY).toISOString()
   const recent = new Date(Date.now() - 3 * DAY).toISOString()
   try {
     const res = await Promise.all([
-      supabase.from('sessions').select('*').gte('started_at', since).order('started_at').limit(2000),
+      supabase.from('sessions').select('*').gte('started_at', since).order('started_at', { ascending: false }).limit(2000),
       supabase.from('night_wakes').select('*').gte('woke_at', since).limit(4000),
       supabase.from('checks').select('*').gte('done_at', recent),
       supabase.from('settings').select('*'),
       supabase.from('profiles').select('*'),
     ])
+    if (user.peek()?.id !== uid) return // signed out (or in as someone else) meanwhile
     const failed = res.find((r) => r.error)
     if (failed) throw failed.error
     batch(() => {
@@ -202,18 +217,25 @@ function subscribe() {
       const id = p.new?.id ?? p.old?.id
       if (pendingIds().has(`${p.table}:${id}`)) return // our unsent version wins
       if (p.eventType === 'DELETE') deleteLocal(p.table, id)
-      else {
-        const local = get(p.table, id)
-        if (local && ms(local.updated_at) > ms(p.new.updated_at)) return
-        upsertLocal(p.table, p.new)
-      }
+      else upsertLocal(p.table, p.new)
       persistCache()
     })
     .subscribe()
 }
 
 function start() {
-  restore(readJSON(CACHE_KEY, null))
+  // Changes queued by whoever used this phone before are theirs, not ours.
+  outbox = outbox.filter((o) => (o.uid ?? me()) === me())
+  persistOutbox()
+  // One-time move from the old shared cache, only if it was this account's.
+  const old = readJSON(OLD_CACHE_KEY, null)
+  if (old) {
+    if (old.profiles?.some((p) => p.id === me()) && !readJSON(cacheKey(), null)) writeJSON(cacheKey(), old)
+    try {
+      localStorage.removeItem(OLD_CACHE_KEY)
+    } catch {}
+  }
+  restore(readJSON(cacheKey(), null))
   applyOutbox()
   if (db.settings.peek().length) loaded.value = true
   refresh()
@@ -285,8 +307,9 @@ export async function signOut() {
     location.reload()
     return
   }
+  const key = cacheKey()
   await supabase.auth.signOut()
-  localStorage.removeItem(CACHE_KEY)
+  localStorage.removeItem(key)
 }
 
 // ─── Family ──────────────────────────────────────────────────────────────────

@@ -106,7 +106,8 @@ function FamilyCard() {
   const [err, setErr] = useState(null)
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState(null)
-  const load = () => fetchInvites().then(setInvites, (e) => setErr(e.message))
+  // Only this family's outgoing invites (not ones other families sent to you).
+  const load = () => fetchInvites().then((l) => setInvites(l.filter((i) => i.family_id === settings.peek()?.id)), (e) => setErr(e.message))
   useEffect(() => void load(), [])
 
   const send = async (e) => {

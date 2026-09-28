@@ -52,7 +52,7 @@ you'd rather keep the code private, Cloudflare Pages or Netlify work the same wa
 ### 3. On each iPhone
 1. Open the link in **Safari** → Share → **Add to Home Screen**.
 2. Open it from the home screen, enter your email, type the code from the email. That's the last time.
-3. The first person sets up the baby (name, birthday). Then Guide → Settings: night 1 of training and the night-feed plan you've agreed with your pediatrician, and Family → invite everyone else.
+3. The first person sets up the baby (name, birthday). Then Settings (the gear at the top): night 1 of training and the night-feed plan you've agreed with your pediatrician, and Family → invite everyone else.
 
 ---
 
@@ -76,10 +76,13 @@ npm run dev
 ## Families and access
 - Anyone can sign in with an email code. After signing in they either set up a new baby (they become that
   family's owner) or accept an invite someone sent to their email.
-- Invite people from **Guide → Settings → Family**, then send them the app link. When they sign in with the
+- Invite people from **Settings (the gear) → Family**, then send them the app link. When they sign in with the
   invited email they join that log.
 - Every row belongs to a family, and row-level security only lets people see and change their own family's rows.
 - The owner can remove someone from the family in the same place. It takes effect immediately.
 - Upgrading a database made with the original single-family schema: run
   [`supabase/migrations/20260928_families.sql`](supabase/migrations/20260928_families.sql) once. Everyone on the
   old members list lands in one family with all existing data; the earliest account becomes the owner.
+- Created the database from `schema.sql` before 29 Sep 2026? Run
+  [`supabase/migrations/20260929_profile_lockdown.sql`](supabase/migrations/20260929_profile_lockdown.sql) once.
+  It closes a hole that let a signed-in user change their own family and role.
